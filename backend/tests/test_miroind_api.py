@@ -152,6 +152,20 @@ def test_hindi_report_has_translated_labels_and_quality_note(client):
     assert report["usage_metadata"]["report_language"] == "hi"
 
 
+def test_asset_can_carry_a_regional_context_signal_without_changing_product_scope(client):
+    payload = _payload(
+        asset={"language": "Marathi", "content": "सोपे धडे तुमच्या पुढच्या पावलासाठी मदत करतात."},
+        audience={"language": "Marathi", "region": "Maharashtra"},
+    )
+
+    response = client.post("/api/miroind/runs", json=payload)
+
+    assert response.status_code == 200
+    report = response.json["data"]["report"]
+    assert report["usage_metadata"]["asset_language"] == "Marathi"
+    assert report["audience_summary"]["language"] == "Marathi"
+
+
 def test_run_is_persisted_and_get_returns_same_result(client, tmp_path):
     post_body = client.post("/api/miroind/runs", json=_payload()).json
     run_id = post_body["data"]["run_id"]

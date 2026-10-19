@@ -130,6 +130,7 @@ MAX_LENGTHS = {
     "brand.preferred_vocabulary[]": 100,
     "asset.title": 200,
     "asset.content": 20_000,
+    "asset.language": 80,
     "audience.region": 120,
     "audience.language": 80,
     "audience.age_band": 80,
@@ -163,7 +164,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "mixed": "mixed",
         "neutral": "neutral",
         "scenario_summary": "{brand} presents a {tone} message for {relationship} with the audience.",
-        "audience_summary_text": "The lens covers {region}, {language}, {age}, {occupation}, {city}, and {income}.",
+        "audience_summary_text": "The lens covers {region}, {age}, {occupation}, {city}, and {income}, with local context considered where supplied.",
         "positive_default": "The message gives a concrete starting point for evaluating the offer.",
         "positive_value": "The stated benefit can help readers compare the offer with their needs.",
         "positive_clarity": "The short-post format makes the next action relatively easy to scan.",
@@ -241,7 +242,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "mixed": "मिश्रित",
         "neutral": "तटस्थ",
         "scenario_summary": "{brand} दर्शकों के साथ {relationship} संबंध के लिए {tone} संदेश प्रस्तुत करता है।",
-        "audience_summary_text": "यह दृष्टिकोण {region}, {language}, {age}, {occupation}, {city} और {income} को ध्यान में रखता है।",
+        "audience_summary_text": "यह दृष्टिकोण {region}, {age}, {occupation}, {city} और {income} को ध्यान में रखता है; जहां दिया गया हो वहां स्थानीय संदर्भ भी देखा जाता है।",
         "positive_default": "संदेश प्रस्ताव को परखने के लिए एक ठोस शुरुआती बिंदु देता है।",
         "positive_value": "बताया गया लाभ पाठकों को अपनी जरूरतों से प्रस्ताव की तुलना करने में मदद कर सकता है।",
         "positive_clarity": "छोटे पोस्ट का प्रारूप अगले कदम को जल्दी समझने योग्य बनाता है।",
@@ -509,10 +510,8 @@ def validate_payload(payload: Any) -> dict[str, Any]:
             value = _validate_string(asset, field, f"asset.{field}", fields)
             if value is not None:
                 normalized_asset[field] = value
-        language = asset.get("language")
-        if language not in {"en", "hi"}:
-            fields["asset.language"] = "must be one of: en, hi"
-        else:
+        language = _validate_string(asset, "language", "asset.language", fields)
+        if language is not None:
             normalized_asset["language"] = language
         normalized["asset"] = normalized_asset
 

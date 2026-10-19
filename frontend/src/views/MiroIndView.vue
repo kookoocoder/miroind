@@ -2,12 +2,12 @@
   <main class="miroind-page">
     <header class="miroind-header">
       <div>
-        <router-link class="back-link" to="/">← MiroInd workspace</router-link>
+        <router-link class="back-link" to="/">← Back to BOSS</router-link>
         <div class="brand-lockup">
-          <span class="brand-mark">MI</span>
+          <span class="brand-mark">B</span>
           <div>
-            <p class="eyebrow">INDIA-FIRST MESSAGE REVIEW</p>
-            <h1>MiroInd</h1>
+            <p class="eyebrow">BOSS / INDIA MESSAGE LAB</p>
+            <h1>BOSS</h1>
           </div>
         </div>
       </div>
@@ -20,13 +20,13 @@
         <h2>See your message through a specific Indian audience lens.</h2>
         <p class="hero-copy">
           Describe your brand, paste a text asset, and define the audience you want to understand.
-          MiroInd returns directional risks, disagreements, and practical improvements without sending
+          BOSS returns directional risks, disagreements, and practical improvements without sending
           your scenario to a model or external service in this offline MVP.
         </p>
       </div>
       <div class="principles">
         <span>Inspectable personas</span>
-        <span>Hindi + English reports</span>
+        <span>India-wide context signals</span>
         <span>No real platform posting</span>
       </div>
     </section>
@@ -86,11 +86,8 @@
               <small v-if="errors['asset.title']" class="field-error">{{ errors['asset.title'] }}</small>
             </label>
             <label>
-              <span>Asset language <b>*</b></span>
-              <select v-model="form.asset.language">
-                <option value="en">English</option>
-                <option value="hi">Hindi</option>
-              </select>
+              <span>Primary asset language <em>(optional)</em></span>
+              <input v-model="form.asset.language" type="text" maxlength="80" placeholder="Optional — English, Hindi, Marathi, or other" />
               <small v-if="errors['asset.language']" class="field-error">{{ errors['asset.language'] }}</small>
             </label>
           </div>
@@ -105,7 +102,7 @@
         </fieldset>
 
         <fieldset>
-          <legend>Indian audience lens</legend>
+            <legend>India audience context</legend>
           <div class="field-grid two-up">
             <label>
               <span>Region or state <b>*</b></span>
@@ -113,8 +110,8 @@
               <small v-if="errors['audience.region']" class="field-error">{{ errors['audience.region'] }}</small>
             </label>
             <label>
-              <span>Preferred language <b>*</b></span>
-              <input v-model="form.audience.language" type="text" placeholder="Hindi, Marathi, or English" />
+              <span>Local context signal <em>(optional)</em></span>
+              <input v-model="form.audience.language" type="text" placeholder="Language, local phrasing, or context" />
               <small v-if="errors['audience.language']" class="field-error">{{ errors['audience.language'] }}</small>
             </label>
             <label>
@@ -149,7 +146,7 @@
           <legend>Simulation settings</legend>
           <div class="field-grid three-up">
             <label>
-              <span>Report language</span>
+              <span>Report output</span>
               <select v-model="form.config.report_language">
                 <option value="en">English</option>
                 <option value="hi">Hindi</option>
@@ -172,7 +169,7 @@
         <div v-if="formError" class="form-error" role="alert">{{ formError }}</div>
         <button class="primary-button" type="submit" :disabled="loading">
           <span v-if="loading" class="spinner" aria-hidden="true"></span>
-          {{ loading ? 'Running stress test…' : 'Run MiroInd stress test →' }}
+          {{ loading ? 'Running stress test…' : 'Run BOSS stress test →' }}
         </button>
       </form>
 
@@ -195,7 +192,7 @@
           <ul>
             <li>Use risks to form questions for real audience research.</li>
             <li>Compare disagreements instead of chasing a single score.</li>
-            <li>Review Hindi output with a fluent reader before publishing.</li>
+            <li>Review any localised version with someone who knows the audience context.</li>
             <li>Do not upload private messages or personal data without permission.</li>
           </ul>
         </section>
@@ -206,7 +203,7 @@
       <div class="report-toolbar">
         <div>
           <p class="eyebrow accent">RUN COMPLETE</p>
-          <h2>{{ report.title || 'MiroInd stress-test report' }}</h2>
+          <h2>BOSS / India message stress-test</h2>
           <p class="run-id">Run ID: <code>{{ runId }}</code></p>
         </div>
         <div class="toolbar-actions">
@@ -235,8 +232,8 @@
           <p>{{ report.audience_summary?.summary }}</p>
           <div class="tag-list">
             <span>{{ report.audience_summary?.region }}</span>
-            <span>{{ report.audience_summary?.language }}</span>
             <span>{{ report.audience_summary?.city_tier }}</span>
+            <span>{{ report.audience_summary?.occupation }}</span>
             <span>{{ report.audience_summary?.persona_count }} persona lenses</span>
           </div>
         </article>
@@ -354,7 +351,7 @@ const form = reactive({
   },
   audience: {
     region: '',
-    language: 'English',
+    language: 'Not specified',
     age_band: '',
     occupation: '',
     city_tier: 'tier_2',
@@ -400,7 +397,6 @@ const requiredFields = [
   ['asset.title', () => form.asset.title],
   ['asset.content', () => form.asset.content],
   ['audience.region', () => form.audience.region],
-  ['audience.language', () => form.audience.language],
   ['audience.age_band', () => form.audience.age_band],
   ['audience.occupation', () => form.audience.occupation],
   ['audience.city_tier', () => form.audience.city_tier],
@@ -489,17 +485,17 @@ const formatMetadata = (value) => {
 
 <style scoped>
 :global(body) {
-  background: #f4f0e9;
+  background: #f0f4ec;
 }
 
 .miroind-page {
-  --ink: #17211b;
-  --muted: #687268;
-  --line: #d8d8cd;
-  --paper: #fffdf8;
-  --green: #176b4d;
-  --green-dark: #0d4935;
-  --orange: #e86d35;
+  --ink: #142019;
+  --muted: #627167;
+  --line: #cdd8cd;
+  --paper: #fdfef9;
+  --green: #183124;
+  --green-dark: #0b1110;
+  --orange: #d5f26b;
   max-width: 1440px;
   min-height: 100vh;
   margin: 0 auto;
@@ -542,8 +538,8 @@ const formatMetadata = (value) => {
   width: 42px;
   height: 42px;
   place-items: center;
-  color: #fff;
-  background: var(--green);
+  color: #0b1110;
+  background: var(--orange);
   font-size: 13px;
   font-weight: 800;
   letter-spacing: -0.08em;
@@ -566,7 +562,7 @@ const formatMetadata = (value) => {
 
 .hero-card h2 { max-width: 700px; margin: 0 0 13px; font-size: clamp(29px, 4vw, 54px); line-height: 1.04; letter-spacing: -0.055em; }
 .hero-copy { max-width: 700px; margin: 0; color: #cfddd4; font-size: 15px; line-height: 1.7; }
-.principles { display: flex; min-width: 210px; flex-direction: column; justify-content: flex-end; gap: 9px; color: #f4ad84; font-size: 12px; }
+.principles { display: flex; min-width: 210px; flex-direction: column; justify-content: flex-end; gap: 9px; color: var(--orange); font-size: 12px; }
 .principles span::before { content: "+"; margin-right: 7px; color: #fff; }
 
 .workspace-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(270px, .7fr); align-items: start; gap: 24px; }
@@ -598,11 +594,11 @@ input:focus, textarea:focus, select:focus { border-color: var(--green); box-shad
 button { border: 0; border-radius: 0; cursor: pointer; font: inherit; }
 button:disabled { cursor: wait; opacity: .6; }
 .primary-button, .secondary-button { min-height: 43px; padding: 0 17px; font-size: 12px; font-weight: 800; }
-.primary-button { color: #fff; background: var(--green); }
-.primary-button:hover:not(:disabled) { background: #0f593f; }
+.primary-button { color: #0b1110; background: var(--orange); }
+.primary-button:hover:not(:disabled) { background: #e2fb87; }
 .primary-button.compact { min-height: 38px; }
 .secondary-button { color: var(--green); border: 1px solid var(--green); background: transparent; }
-.secondary-button:hover:not(:disabled) { color: #fff; background: var(--green); }
+.secondary-button:hover:not(:disabled) { color: #f5fbf1; background: var(--green); }
 .spinner { display: inline-block; width: 11px; height: 11px; margin-right: 7px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 

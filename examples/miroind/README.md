@@ -10,6 +10,6 @@ The files can also be submitted directly to `POST /api/miroind/runs`.
 
 Included scenarios:
 
-- `regional-language-app-launch.json` — a hypothetical app launch with language-fit questions.
+- `regional-service-launch.json` — a hypothetical app launch with regional access and local-fit questions.
 - `hypothetical-pricing-update.json` — a fictional pricing announcement with urgency and trust risks.
 - `creator-announcement.json` — a fictional creator message with a clear, relationship-led tone.

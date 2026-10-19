@@ -9,13 +9,13 @@
   },
   "asset": {
     "type": "text",
-    "title": "Learn in the language that feels natural",
-    "content": "Start simple lessons in Hindi today and take one useful step at your own pace.",
+    "title": "A service built for local reality",
+    "content": "Start with simple guidance for your next step, designed around how people in your region actually work and decide.",
     "language": "en"
   },
   "audience": {
     "region": "Madhya Pradesh",
-    "language": "Hindi",
+    "language": "Marathi",
     "age_band": "25-44",
     "occupation": "first-time digital learner",
     "city_tier": "tier_2",

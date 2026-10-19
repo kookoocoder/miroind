@@ -2,7 +2,7 @@
 
 **Status:** MVP slice implemented and verified
 **Source:** `MiroInd_Project_Alignment_Document.docx` v0.1 and the repository roadmap in `README.md`  
-**Current repository state:** Upstream MiroFish frontend, Flask backend, simulation engine, and tests are present. India-specific personas, Hindi-first flows, local graph memory, and brand/image reporting are not yet implemented.
+**Current repository state:** Upstream MiroFish frontend, Flask backend, simulation engine, and tests are present. India-specific personas, local graph memory, and brand/image reporting are being built as the BOSS product direction; language is an optional audience signal rather than the product identity.
 
 ## 1. Product outcome
 
@@ -19,7 +19,7 @@ The product is for exploration and pre-publish review. It must never present syn
 
 ## 2. Recommended first release (MVP)
 
-The first release should be deliberately narrow so that quality can be evaluated before adding more platforms, languages, and media types.
+The first release should be deliberately narrow so that quality can be evaluated before adding more platforms, regional contexts, and media types.
 
 ### Included
 
@@ -27,14 +27,14 @@ The first release should be deliberately narrow so that quality can be evaluated
 - One brand or creator profile per simulation.
 - One audience segment per simulation, with:
   - Region or state
-  - Preferred language
+  - Local context or language signal when relevant
   - Age band
   - Occupation
   - City tier
   - Income band where relevant
 - Eight to ten editable Indian persona templates for the initial audience families.
-- English and Hindi UI/report support.
-- Hindi–English code-mixed output where model quality is acceptable, clearly labelled as experimental.
+- A baseline report output with optional Hindi output.
+- Local phrasing and code-mixing only when they materially affect the research question.
 - One platform-style interaction format for the first evaluation loop: short-form post plus reactions/discussion.
 - A structured report containing:
   - Overall image impact direction and explanation
@@ -83,9 +83,9 @@ Tasks:
 Define validated schemas for:
 
 - `BrandProfile`: positioning, audience relationship, tone, red lines, preferred vocabulary, and claims that must not be invented.
-- `Asset`: type, text content, optional title/context, language, and source metadata.
-- `AudienceDefinition`: geography, language, age, occupation, city tier, income, and exclusions.
-- `SimulationConfig`: persona count, interaction format, model/provider, token or cost budget, seed if supported, and language mode.
+- `Asset`: type, text content, optional title/context, primary language, and source metadata.
+- `AudienceDefinition`: geography, local context signal, age, occupation, city tier, income, and exclusions.
+- `SimulationConfig`: persona count, interaction format, model/provider, token or cost budget, seed if supported, and optional report output language.
 - `SimulationReport`: reactions, themes, risks, image impact, suggestions, assumptions, uncertainty, and run metadata.
 
 Add validation for incomplete or contradictory inputs. Make it clear which fields are required for the MVP and which are optional.
@@ -100,7 +100,7 @@ Tasks:
 
 - Define a persona template format with background, goals, constraints, media habits, language style, likely concerns, and uncertainty notes.
 - Create eight to ten initial personas spanning the first target segment, not a generic “average Indian” audience.
-- Include regional, language, age, occupation, and city-tier context only when it changes the research question.
+- Include regional, age, occupation, city-tier, income, and local-context details only when they change the research question.
 - Add an editorial review checklist for cultural plausibility, respectful representation, and unsupported assumptions.
 - Keep persona data inspectable and editable by users or maintainers.
 - Separate persona attributes from sensitive-attribute inference; do not imply that a persona represents an entire community.
@@ -115,7 +115,7 @@ Tasks:
 
 - Add a MiroInd scenario adapter around the existing simulation pipeline rather than duplicating the engine.
 - Implement the first platform-style interaction as a simulation format, not a connection to a real platform.
-- Add prompt templates for English and Hindi analysis, with explicit instructions to distinguish observation, interpretation, and speculation.
+- Add baseline analysis templates with explicit instructions to distinguish observation, interpretation, and speculation; support local language output as an optional extension.
 - Preserve model/provider configurability for OpenAI-compatible endpoints and future local Ollama use.
 - Record provider, model, prompt/template version, persona set, configuration, and budget in each run.
 - Evaluate local graph-memory options before committing to one implementation; compare operational complexity, persistence, inspection, and offline behaviour.
@@ -154,13 +154,13 @@ Screens or states:
 1. Create or select a brand profile.
 2. Enter or paste a text asset.
 3. Define the target Indian audience.
-4. Choose language, interaction format, and budget.
+4. Choose optional local context, interaction format, output, and budget.
 5. Review assumptions before running.
 6. Show progress and recoverable errors.
 7. Display the structured report with expandable evidence and metadata.
 8. Allow the user to copy or export the report in a simple text/Markdown format.
 
-Add English/Hindi switching for user-facing labels and report headings. Keep provider credentials and private configuration out of the browser and out of persisted client-side data.
+Keep the primary workflow focused on India-wide audience context. Optional language output and local phrasing should not become the main product navigation or positioning.
 
 **Exit criteria:** A user can complete one end-to-end fictional scenario from the browser and understand that the result is a stress test, not a prediction.
 
@@ -191,7 +191,7 @@ The recommended order is:
 5. Report synthesis and metadata
 6. Frontend end-to-end flow
 7. Offline tests, demo scenarios, safety review, and documentation
-8. Small human review with native Hindi speakers and representative domain reviewers
+8. Small human review with India-context reviewers and, where relevant, native-language reviewers
 
 Do not begin regional-language expansion, video support, or multiple platform formats until the first text-only workflow produces consistently understandable reports.
 
@@ -228,7 +228,7 @@ Please approve or change these recommendations:
 
 1. **Initial user segment:** Start with Indian creators and personal brands, then generalise to startup and brand teams.
 2. **Initial asset type:** Text only; defer video until the report workflow is validated.
-3. **Initial language scope:** English and Hindi, with Hindi–English code-mixing treated as experimental.
+3. **Initial language scope:** Keep language optional; use it as one audience signal, with Hindi output available as an extension rather than the product identity.
 4. **Initial simulation format:** One short-form post and discussion format before adding WhatsApp-style groups or other formats.
 5. **Memory direction:** Evaluate a local graph-memory backend first; retain hosted Zep as an explicit optional path during the transition.
 6. **Safety boundary:** No real social-platform posting, private-message ingestion, political influence tooling, or sensitive-attribute inference.

@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import BossHome from '../views/BossHome.vue'
 import Home from '../views/Home.vue'
 import Process from '../views/MainView.vue'
 import SimulationView from '../views/SimulationView.vue'
@@ -10,7 +11,12 @@ import MiroIndView from '../views/MiroIndView.vue'
 const routes = [
   {
     path: '/',
-    name: 'Home',
+    name: 'BossHome',
+    component: BossHome
+  },
+  {
+    path: '/legacy',
+    name: 'LegacyHome',
     component: Home
   },
   {

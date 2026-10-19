@@ -1,10 +1,10 @@
-# MiroInd 🇮🇳
+# BOSS 🇮🇳
 
-### Simulate India's conversations. Before you launch.
+### Brand Outcome Signal System — understand India before you launch.
 
 **An open-source, India-focused multi-agent simulation project for exploring how different communities might respond to a product, policy, or campaign.**
 
-Hindi-first experiences. Regional perspectives. Local-first memory. Built with Indian founders, researchers, and developers in mind.
+India-first experiences. Regional perspectives. Local-first memory. Built with Indian founders, researchers, and developers in mind.
 
 [Vision](#why-miroind) · [Use cases](#what-could-you-explore) · [Roadmap](#roadmap) · [Contribute](#contribute)
 
@@ -16,7 +16,7 @@ Hindi-first experiences. Regional perspectives. Local-first memory. Built with I
 
 India is not one audience.
 
-A pricing change can land differently with a student in Pune, a shop owner in Jaipur, a commuter in Chennai, and a creator in Lucknow. Language, local context, affordability, and the platform where a conversation starts all matter.
+A pricing change can land differently with a student in Pune, a shop owner in Jaipur, a commuter in Chennai, and a creator in Lucknow. Region, local context, affordability, occupation, city tier, and the platform where a conversation starts all matter. Language can be one signal; it is not the product boundary.
 
 MiroInd aims to make those differences easier to explore through transparent, configurable agent-based simulations—without making cloud-only infrastructure the default.
 
@@ -28,12 +28,12 @@ MiroInd aims to make those differences easier to explore through transparent, co
 
 | Focus | Planned direction |
 | --- | --- |
-| **India-native personas** | Editable synthetic persona packs organized by state, language, age, occupation, income band, and city tier. |
-| **Hindi-first experience** | Hindi and English interfaces, prompts, and reports, followed by Tamil, Telugu, Marathi, and Bengali. |
-| **Natural code-mixing** | Support for Hindi–English conversations and, later, additional regional language combinations. |
+| **India-native personas** | Editable synthetic persona packs organized by state or region, age, occupation, income band, city tier, and local context. |
+| **India context first** | Model regional, economic, occupational, cultural, and platform context together instead of reducing an audience to a language label. |
+| **Optional local expression** | Capture language, phrasing, and code-mixing when they materially affect the research question—not as a requirement for every scenario. |
 | **Platform-aware conversations** | Simulated Instagram-style posts and Reels discussions, WhatsApp-style groups and forwarding, ShareChat/Moj-style interactions, plus X and Reddit. |
 | **Local-first graph memory** | Evaluate Neo4j with Graphiti or Kuzu as local memory options, rather than requiring a hosted memory service. |
-| **Flexible model providers** | Plan for OpenAI-compatible endpoints such as Groq, Together, and Fireworks, alongside local Ollama models. Regional-language quality will need evaluation. |
+| **Flexible model providers** | Plan for OpenAI-compatible endpoints such as Groq, Together, and Fireworks, alongside local Ollama models. India-specific context quality will need evaluation. |
 | **Inspectable results** | Reports that expose persona assumptions, model choices, simulation settings, and uncertainty—not just a single sentiment score. |
 | **Affordable experimentation** | A lightweight quick-simulation mode, configurable agent counts, and explicit usage budgets. |
 
@@ -55,7 +55,7 @@ How could the same announcement be interpreted in a short-form video discussion 
 
 ### Creator and content research
 
-How might language and local context change the interpretation of a creator's message? Explore alternative explanations before testing content with real audiences.
+How might state, city tier, occupation, affordability, and local context change the interpretation of a creator's message? Explore alternative explanations before testing content with real audiences.
 
 ### Early-stage market research
 
@@ -68,7 +68,7 @@ Use synthetic conversations to generate interview questions and product hypothes
 | **Hypothetical UPI merchant fee** | What concerns might small merchants and customers raise about a proposed fee? |
 | **Free bus travel scheme for women** | How might commuters discuss affordability, access, safety, and implementation? |
 | **Ride-hailing price competition** | How might riders and drivers weigh lower fares against reliability and earnings? |
-| **Regional-language app launch** | What onboarding and trust questions could arise for first-time users? |
+| **Regional service launch** | What onboarding, trust, access, and local-fit questions could arise for first-time users? |
 | **GST-related pricing update** | How might customers interpret a price change, and what explanation would be clearer? |
 | **Cricket sponsorship controversy** | How might different fan communities interpret a fictional brand response? |
 
@@ -78,7 +78,7 @@ All starter scenarios should use fictional or clearly labeled hypothetical input
 
 ```mermaid
 flowchart TD
-    A[Define a scenario and research question] --> B[Select synthetic audience and languages]
+    A[Define a scenario and research question] --> B[Define Indian audience context]
     B --> C[Choose model provider and usage budget]
     C --> D[Run platform-style agent conversations]
     D --> E[Store interactions in local graph memory]
@@ -90,7 +90,7 @@ flowchart TD
 
 - **Local-first, not local-only.** Aim to keep scenario data and memory on your machine by default, with optional hosted providers.
 - **Transparent assumptions.** Persona templates and model configuration should be inspectable and editable.
-- **Language quality over checkbox support.** Evaluate regional-language outputs with native speakers.
+- **Context quality over checkbox support.** Evaluate regional, economic, occupational, and cultural assumptions with people who know the audience.
 - **Reproducible where possible.** Record configuration, prompts, and seeds while acknowledging model nondeterminism.
 - **Cost visibility.** Make agent counts, model usage, and budget limits explicit.
 
@@ -103,7 +103,7 @@ Using a hosted model sends submitted prompts and context to that provider and ma
 - [x] Import the MiroFish foundation with its AGPL-3.0 license and upstream attribution.
 - [x] Evaluate the architecture for India-specific adaptations.
 - [x] Document the implementation stack and a minimal runnable simulation.
-- [x] Add Hindi and English deterministic report templates.
+- [x] Add baseline deterministic report templates with optional Hindi output.
 - [x] Create 8–10 editable Indian synthetic research-lens templates.
 - [x] Prototype a short-form post/discussion interaction format.
 - [ ] Select and implement a local graph-memory backend.
@@ -214,7 +214,7 @@ High-value early contributions include:
 - Reviewing the architecture and local-memory tradeoffs.
 - Writing fictional, well-documented Indian starter scenarios.
 - Designing persona templates that avoid demographic stereotypes.
-- Evaluating Hindi and regional-language model behavior.
+- Evaluating India-context and local-expression model behavior.
 - Defining tests for cost, reproducibility, and simulation limitations.
 - Designing a clear bilingual research interface.
 
@@ -230,4 +230,4 @@ The import retains the upstream application unchanged; this README documents the
 
 ---
 
-**Built around India's languages, contexts, and questions—with assumptions you can inspect.**
+**Built around India's regions, contexts, and questions—with assumptions you can inspect.**
