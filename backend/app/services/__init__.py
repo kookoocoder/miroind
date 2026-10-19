@@ -16,6 +16,17 @@ from .simulation_config_generator import (
     EventConfig,
     PlatformConfig
 )
+from .boss_personas import (
+    BossAgentProfile,
+    BossSimulationValidationError,
+    build_boss_simulation_config,
+    materialize_boss_personas,
+    materialize_boss_profiles,
+    resolve_boss_asset_text,
+    serialize_reddit_profiles,
+    serialize_twitter_csv,
+    serialize_twitter_profiles,
+)
 from .simulation_runner import (
     SimulationRunner,
     SimulationRunState,
@@ -55,6 +66,15 @@ __all__ = [
     'TimeSimulationConfig',
     'EventConfig',
     'PlatformConfig',
+    'BossAgentProfile',
+    'BossSimulationValidationError',
+    'build_boss_simulation_config',
+    'materialize_boss_personas',
+    'materialize_boss_profiles',
+    'resolve_boss_asset_text',
+    'serialize_reddit_profiles',
+    'serialize_twitter_csv',
+    'serialize_twitter_profiles',
     'SimulationRunner',
     'SimulationRunState',
     'RunnerStatus',
@@ -70,4 +90,3 @@ __all__ = [
     'CommandType',
     'CommandStatus',
 ]
-

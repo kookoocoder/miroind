@@ -48,6 +48,14 @@ class Config:
         os.path.join(os.path.dirname(__file__), '../uploads/boss/assets')
     )
     BOSS_MAX_ASSET_BYTES = int(os.environ.get('BOSS_MAX_ASSET_BYTES', str(100 * 1024 * 1024)))
+    # Local ffmpeg derivatives are capped independently from the source asset.
+    BOSS_MAX_KEYFRAMES = int(os.environ.get('BOSS_MAX_KEYFRAMES', '6'))
+    BOSS_MAX_KEYFRAME_BYTES = int(
+        os.environ.get('BOSS_MAX_KEYFRAME_BYTES', str(2 * 1024 * 1024))
+    )
+    BOSS_MAX_AUDIO_EXTRACT_BYTES = int(
+        os.environ.get('BOSS_MAX_AUDIO_EXTRACT_BYTES', str(25 * 1024 * 1024))
+    )
     BOSS_ALLOWED_MEDIA_MIMES = frozenset(
         item.strip().lower()
         for item in os.environ.get(

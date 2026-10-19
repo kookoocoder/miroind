@@ -49,6 +49,8 @@ MAX_LENGTHS = {
     "assets[].language": 80,
     "assets[].storage_key": 500,
     "assets[].mime_type": 120,
+    "assets[].derived_artifacts[].text": 20_000,
+    "assets[].derived_artifacts[].processor": 120,
     "run_config[].interaction_formats[]": 80,
     "run_config[].timezone": 80,
     "provenance.input_source": 120,
@@ -502,12 +504,69 @@ def _normalize_asset(value: Any, index: int, fields: dict[str, str]) -> dict[str
     if supplied_sha is None and content is not None:
         supplied_sha = hashlib.sha256(content.encode("utf-8")).hexdigest()
     derived_artifacts = value.get("derived_artifacts", [])
+    normalized_artifacts: list[dict[str, Any]] = []
     if not isinstance(derived_artifacts, list) or len(derived_artifacts) > 50:
         fields[f"{path}.derived_artifacts"] = "must be an array with at most 50 items"
     elif any(not isinstance(item, Mapping) for item in derived_artifacts):
         fields[f"{path}.derived_artifacts"] = "must contain JSON objects"
-    # Binary data and arbitrary artifact metadata are deliberately not copied
-    # into the first-slice manifest. The catalog can add typed references later.
+    else:
+        allowed_artifact_keys = {
+            "artifact_id",
+            "kind",
+            "processor",
+            "processor_name",
+            "processor_version",
+            "status",
+            "text",
+            "derived_text",
+            "content",
+        }
+        for artifact_index, artifact in enumerate(derived_artifacts):
+            artifact_path = f"{path}.derived_artifacts[{artifact_index}]"
+            _reject_unknown(artifact, allowed_artifact_keys, artifact_path, fields)
+            normalized_artifact: dict[str, Any] = {}
+            artifact_id = artifact.get("artifact_id")
+            if artifact_id is not None:
+                if (
+                    not isinstance(artifact_id, str)
+                    or not artifact_id.strip()
+                    or len(artifact_id.strip()) > 120
+                    or "/" in artifact_id
+                    or "\\" in artifact_id
+                ):
+                    fields[f"{artifact_path}.artifact_id"] = "must be a safe identifier"
+                else:
+                    normalized_artifact["artifact_id"] = artifact_id.strip()
+            for key in ("kind", "processor", "processor_name", "processor_version", "status"):
+                item = artifact.get(key)
+                if item is None:
+                    continue
+                if not isinstance(item, str) or not item.strip():
+                    fields[f"{artifact_path}.{key}"] = "must be a non-empty string"
+                elif len(item.strip()) > MAX_LENGTHS.get(
+                    f"assets[].derived_artifacts[].{key}", 120
+                ):
+                    fields[f"{artifact_path}.{key}"] = "is too long"
+                elif _is_absolute_path(item):
+                    fields[f"{artifact_path}.{key}"] = "must not be an absolute path"
+                else:
+                    normalized_artifact[key] = item.strip()
+            text_keys = [key for key in ("text", "derived_text", "content") if key in artifact]
+            if len(text_keys) > 1:
+                fields[f"{artifact_path}.text"] = "use only one text field"
+            if text_keys:
+                text_key = text_keys[0]
+                text_value = artifact.get(text_key)
+                if not isinstance(text_value, str):
+                    fields[f"{artifact_path}.{text_key}"] = "must be a string"
+                elif len(text_value) > MAX_LENGTHS["assets[].derived_artifacts[].text"]:
+                    fields[f"{artifact_path}.{text_key}"] = "is too long"
+                else:
+                    normalized_artifact[text_key] = text_value
+            if normalized_artifact:
+                normalized_artifacts.append(normalized_artifact)
+    # Preserve only typed, bounded text/artifact references. Binary data,
+    # storage paths, and arbitrary metadata never enter the scenario snapshot.
     return {
         "asset_id": supplied_id or _generated_reference_id("asset", value, index),
         "kind": kind,
@@ -518,7 +577,7 @@ def _normalize_asset(value: Any, index: int, fields: dict[str, str]) -> dict[str
         "size_bytes": size_bytes,
         "sha256": supplied_sha,
         "language": language,
-        "derived_artifacts": [],
+        "derived_artifacts": normalized_artifacts,
     }
 
 

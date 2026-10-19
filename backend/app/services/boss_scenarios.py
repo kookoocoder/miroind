@@ -137,6 +137,70 @@ class BossScenarioStore:
         self._atomic_write_json(self.root / scenario_id / "graph.json", record)
         return record
 
+    def get_simulation_record(self, scenario_id: str) -> dict[str, Any] | None:
+        """Read the deterministic BOSS simulation-preparation record."""
+
+        if not self._validate_scenario_id(scenario_id):
+            return None
+        record = self._read_json(
+            self.root / scenario_id / "simulation.json",
+            scenario_id,
+            require_schema=False,
+        )
+        if record is None:
+            return None
+        if (
+            record.get("schema_version") != "boss.simulation.v1"
+            or record.get("source_kind") != "boss_scenario"
+        ):
+            return None
+        return record
+
+    def save_simulation_record(self, scenario_id: str, record: Any) -> dict[str, Any]:
+        """Atomically persist a BOSS simulation-preparation record."""
+
+        if not self._validate_scenario_id(scenario_id):
+            raise BossScenarioNotFound("scenario not found")
+        if not isinstance(record, dict) or record.get("scenario_id") != scenario_id:
+            raise ValueError("invalid BOSS simulation record")
+        if (
+            record.get("schema_version") != "boss.simulation.v1"
+            or record.get("source_kind") != "boss_scenario"
+        ):
+            raise ValueError("invalid BOSS simulation record source")
+        if not (self.root / scenario_id / "manifest.json").is_file():
+            raise BossScenarioNotFound("scenario not found")
+        self._atomic_write_json(self.root / scenario_id / "simulation.json", record)
+        return record
+
+    def save_simulation_artifact(self, scenario_id: str, relative_name: str, content: str) -> str:
+        """Write a named simulation artifact below ``scenario_id/simulation``.
+
+        Only relative, simulation-scoped names are accepted.  The returned
+        value is the same relative name and is safe to include in an API
+        record; no machine filesystem path is exposed.
+        """
+
+        if not self._validate_scenario_id(scenario_id):
+            raise BossScenarioNotFound("scenario not found")
+        if not isinstance(relative_name, str) or not relative_name.startswith("simulation/"):
+            raise ValueError("simulation artifact name must be simulation-scoped")
+        parts = relative_name.split("/")
+        if any(not part or part in {".", ".."} for part in parts):
+            raise ValueError("simulation artifact name must be a safe relative path")
+        if not isinstance(content, str):
+            raise ValueError("simulation artifact content must be text")
+        scenario_dir = self.root / scenario_id
+        if not (scenario_dir / "manifest.json").is_file():
+            raise BossScenarioNotFound("scenario not found")
+        destination = scenario_dir / Path(*parts)
+        try:
+            destination.resolve(strict=False).relative_to(scenario_dir.resolve(strict=False))
+        except ValueError as error:
+            raise ValueError("simulation artifact name must stay under the scenario") from error
+        self._atomic_write_text(destination, content)
+        return relative_name
+
     def _read_json(
         self,
         path: Path,
@@ -169,6 +233,27 @@ class BossScenarioStore:
             with os.fdopen(file_descriptor, "w", encoding="utf-8") as handle:
                 json.dump(value, handle, ensure_ascii=False, sort_keys=True, indent=2)
                 handle.write("\n")
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(temporary_name, destination)
+        except Exception:
+            try:
+                os.unlink(temporary_name)
+            except FileNotFoundError:
+                pass
+            raise
+
+    @staticmethod
+    def _atomic_write_text(destination: Path, value: str) -> None:
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        descriptor, temporary_name = tempfile.mkstemp(
+            prefix=f".{destination.name}.",
+            suffix=".tmp",
+            dir=str(destination.parent),
+        )
+        try:
+            with os.fdopen(descriptor, "w", encoding="utf-8", newline="") as handle:
+                handle.write(value)
                 handle.flush()
                 os.fsync(handle.fileno())
             os.replace(temporary_name, destination)

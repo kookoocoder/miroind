@@ -1,9 +1,11 @@
 """Safe local storage and technical parsing for BOSS media assets.
 
-This service deliberately does not call a model, ffprobe, OCR engine, or
-document understanding library.  It only validates bytes, records technical
-facts that can be read safely from those bytes, and stores user-supplied text
-artifacts separately from JSON metadata.
+This service does not call a model, OCR engine, or document understanding
+library.  Audio and video may be probed with local ffprobe for duration and
+codec facts, then locally reduced with ffmpeg to keyframes and one audio
+extract.  If either tool fails, the file stays uploaded_unparsed or
+technical_parsed with a warning.  User supplied text artifacts stay separate
+from JSON metadata.
 """
 
 from __future__ import annotations
@@ -22,6 +24,8 @@ from typing import Any, BinaryIO
 from werkzeug.datastructures import FileStorage
 
 from ..config import Config
+from .boss_media_derivatives import generate_media_derivatives
+from .boss_media_probe import probe_local_media
 from ..models.boss_asset import (
     ARTIFACT_KINDS,
     ARTIFACT_SCHEMA_VERSION,
@@ -676,6 +680,32 @@ class BossAssetStore:
             content_path = asset_dir / f"content.{detected['extension']}"
             os.replace(temporary_path, content_path)
             storage_key = content_path.relative_to(root).as_posix()
+            artifacts: list[dict[str, Any]] = []
+            if detected_kind in {"audio", "video"}:
+                probed = probe_local_media(content_path)
+                if probed:
+                    status = "technical_parsed"
+                    warnings = [
+                        warning
+                        for warning in warnings
+                        if "ffprobe" not in warning.casefold() and "semantic parsing" not in warning.casefold()
+                    ]
+                    technical_metadata = dict(probed)
+                    technical_metadata["byte_count"] = total
+                    try:
+                        artifacts, derivative_warnings = generate_media_derivatives(
+                            content_path,
+                            asset_dir,
+                            root,
+                            asset_id=asset_id,
+                            facts=technical_metadata,
+                        )
+                    except Exception:
+                        derivative_warnings = [
+                            "ffmpeg derivatives could not be generated; "
+                            "technical facts were kept."
+                        ]
+                    warnings.extend(derivative_warnings)
             metadata = {
                 "schema_version": ASSET_SCHEMA_VERSION,
                 "asset_id": asset_id,
@@ -692,7 +722,7 @@ class BossAssetStore:
                 "warnings": warnings,
                 "technical_metadata": technical_metadata,
                 "storage_key": storage_key,
-                "artifacts": [],
+                "artifacts": artifacts,
             }
             self._atomic_write_json(asset_dir / "metadata.json", metadata)
             return metadata
@@ -748,7 +778,7 @@ class BossAssetStore:
         fields: dict[str, str] = {}
         kind = payload.get("kind")
         if not isinstance(kind, str) or kind not in ARTIFACT_KINDS:
-            fields["kind"] = "must be one of: transcript, ocr, description, normalized_text"
+            fields["kind"] = f"must be one of: {', '.join(sorted(ARTIFACT_KINDS))}"
         text = payload.get("text")
         if not isinstance(text, str):
             fields["text"] = "is required and must be a string"

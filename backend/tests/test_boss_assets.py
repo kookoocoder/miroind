@@ -2,6 +2,8 @@ import hashlib
 import io
 import json
 import struct
+import subprocess
+from pathlib import Path
 
 import pytest
 
@@ -40,6 +42,49 @@ def _png_bytes(width=3, height=2):
         + struct.pack(">II", width, height)
         + b"\x08\x02\x00\x00\x00"
     )
+
+
+def _mock_successful_probe(monkeypatch, duration="2.5"):
+    facts = {
+        "status": "technical_parsed",
+        "probe_tool": "ffprobe",
+        "has_video": True,
+        "has_audio": True,
+        "duration_seconds": float(duration),
+        "width": 320,
+        "height": 240,
+        "video_codec": "h264",
+        "audio_codec": "aac",
+        "frame_rate": 30.0,
+    }
+    monkeypatch.setattr(
+        "app.services.boss_assets.probe_local_media", lambda _path: dict(facts)
+    )
+
+
+def _mock_ffmpeg(
+    monkeypatch,
+    *,
+    write_output=True,
+    returncode=0,
+    keyframe_bytes=b"\xff\xd8\xff\xe0BINARY-MARKER\xff\xd9",
+    audio_bytes=b"\x00\x00\x00\x18ftypM4A \x00\x00\x00\x00BINARY-MARKER",
+):
+    monkeypatch.setattr(
+        "app.services.boss_media_derivatives.shutil.which",
+        lambda name: "/usr/bin/ffmpeg" if name == "ffmpeg" else None,
+    )
+
+    def runner(command, **_kwargs):
+        if write_output and returncode == 0:
+            target = Path(command[-1])
+            payload = keyframe_bytes if "-frames:v" in command else audio_bytes
+            target.write_bytes(payload)
+        return subprocess.CompletedProcess(
+            args=command, returncode=returncode, stdout="", stderr=""
+        )
+
+    monkeypatch.setattr("app.services.boss_media_derivatives.subprocess.run", runner)
 
 
 def test_upload_read_status_download_delete_and_checksum(client, assets_root):
@@ -116,6 +161,189 @@ def test_text_mime_cannot_claim_png_bytes(client):
     assert "does not match" in response.json["fields"]["file"]
 
 
+def test_ffprobe_json_records_technical_facts_without_scene_claims(client, monkeypatch):
+    document = {
+        "streams": [
+            {
+                "codec_type": "video",
+                "codec_name": "h264",
+                "width": 320,
+                "height": 240,
+                "avg_frame_rate": "30/1",
+                "duration": "2.5",
+            },
+            {"codec_type": "audio", "codec_name": "aac"},
+        ],
+        "format": {"duration": "2.5", "filename": "/secret/path/clip.mp4"},
+    }
+
+    def runner(*_args, **_kwargs):
+        return subprocess.CompletedProcess(args=[], returncode=0, stdout=json.dumps(document), stderr="")
+
+    monkeypatch.setattr(
+        "app.services.boss_media_probe.shutil.which",
+        lambda name: "/usr/bin/ffprobe" if name == "ffprobe" else None,
+    )
+    monkeypatch.setattr("app.services.boss_media_probe.subprocess.run", runner)
+
+    response = _upload(
+        client,
+        b"\x00\x00\x00\x18ftypisom\x00\x00\x00\x00",
+        "clip.mp4",
+        mimetype="video/mp4",
+    )
+
+    assert response.status_code == 201
+    record = response.json["data"]
+    metadata = record["technical_metadata"]
+    assert record["status"] == "technical_parsed"
+    assert metadata["status"] == "technical_parsed"
+    assert metadata["probe_tool"] == "ffprobe"
+    assert metadata["duration_seconds"] == 2.5
+    assert metadata["width"] == 320
+    assert metadata["height"] == 240
+    assert metadata["video_codec"] == "h264"
+    assert metadata["audio_codec"] == "aac"
+    assert metadata["frame_rate"] == 30.0
+    assert metadata["has_video"] is True
+    assert metadata["has_audio"] is True
+    serialized = json.dumps(record, ensure_ascii=False)
+    assert "/secret" not in serialized
+    folded = serialized.casefold()
+    assert "transcript" not in folded
+    assert "ocr" not in folded
+    assert "scene" not in folded
+
+
+def test_ffmpeg_derivatives_are_files_with_hashes_and_reload_same_ids(
+    client, assets_root, monkeypatch
+):
+    monkeypatch.setattr(Config, "BOSS_MAX_KEYFRAME_BYTES", 512)
+    monkeypatch.setattr(Config, "BOSS_MAX_AUDIO_EXTRACT_BYTES", 512)
+    _mock_successful_probe(monkeypatch, duration="2.5")
+    _mock_ffmpeg(monkeypatch)
+
+    response = _upload(
+        client,
+        b"\x00\x00\x00\x18ftypisom\x00\x00\x00\x00",
+        "clip.mp4",
+        mimetype="video/mp4",
+    )
+
+    assert response.status_code == 201
+    record = response.json["data"]
+    assert record["status"] == "technical_parsed"
+    assert record["warnings"] == []
+    keyframes = [item for item in record["artifacts"] if item["kind"] == "keyframe"]
+    audio = [item for item in record["artifacts"] if item["kind"] == "audio_extract"]
+    assert 1 <= len(keyframes) <= 6
+    assert len(audio) == 1
+    assert len(record["artifacts"]) == len(keyframes) + 1
+
+    for artifact in record["artifacts"]:
+        assert artifact["processor"] == "ffmpeg"
+        assert artifact["processor_version"] == "ffmpeg"
+        assert artifact["status"] == "derived"
+        assert artifact["source_asset_id"] == record["asset_id"]
+        assert isinstance(artifact["timestamp_seconds"], float)
+        assert artifact["storage_key"].startswith(
+            f"{record['asset_id']}/artifacts/{artifact['artifact_id']}"
+        )
+        stored = assets_root / artifact["storage_key"]
+        assert stored.is_file()
+        assert stored.stat().st_size == artifact["size_bytes"]
+        assert stored.stat().st_size <= 512
+        assert hashlib.sha256(stored.read_bytes()).hexdigest() == artifact["sha256"]
+        sidecar = stored.with_suffix(".json")
+        assert json.loads(sidecar.read_text(encoding="utf-8")) == artifact
+
+    assert all(item["timestamp_seconds"] >= 0 for item in keyframes)
+    assert [item["timestamp_seconds"] for item in keyframes] == sorted(
+        item["timestamp_seconds"] for item in keyframes
+    )
+    assert audio[0]["timestamp_seconds"] == 0.0
+
+    metadata_path = assets_root / record["asset_id"] / "metadata.json"
+    assert b"BINARY-MARKER" not in metadata_path.read_bytes()
+    assert "BINARY-MARKER" not in json.dumps(record)
+    assert record["artifacts"][0]["sha256"] != record["sha256"]
+
+    reloaded = client.get(f"/api/boss/assets/{record['asset_id']}").json["data"]
+    assert [item["artifact_id"] for item in reloaded["artifacts"]] == [
+        item["artifact_id"] for item in record["artifacts"]
+    ]
+
+
+def test_missing_ffmpeg_keeps_technical_record_with_warning(
+    client, assets_root, monkeypatch
+):
+    _mock_successful_probe(monkeypatch)
+    monkeypatch.setattr("app.services.boss_media_derivatives.shutil.which", lambda _name: None)
+
+    response = _upload(
+        client,
+        b"\x00\x00\x00\x18ftypisom\x00\x00\x00\x00",
+        "clip.mp4",
+        mimetype="video/mp4",
+    )
+
+    assert response.status_code == 201
+    record = response.json["data"]
+    assert record["status"] == "technical_parsed"
+    assert record["technical_metadata"]["probe_tool"] == "ffprobe"
+    assert record["artifacts"] == []
+    assert any("ffmpeg is not installed" in warning for warning in record["warnings"])
+    assert not (assets_root / record["asset_id"] / "artifacts").exists()
+
+
+def test_failed_ffmpeg_does_not_invent_derivative_records(client, assets_root, monkeypatch):
+    _mock_successful_probe(monkeypatch)
+    _mock_ffmpeg(monkeypatch, write_output=False, returncode=1)
+
+    response = _upload(
+        client,
+        b"\x00\x00\x00\x18ftypisom\x00\x00\x00\x00",
+        "clip.mp4",
+        mimetype="video/mp4",
+    )
+
+    assert response.status_code == 201
+    record = response.json["data"]
+    assert record["status"] == "technical_parsed"
+    assert record["artifacts"] == []
+    assert any("ffmpeg could not extract" in warning for warning in record["warnings"])
+    artifact_dir = assets_root / record["asset_id"] / "artifacts"
+    assert not artifact_dir.exists() or list(artifact_dir.iterdir()) == []
+
+
+def test_oversized_ffmpeg_output_is_discarded(
+    client, assets_root, monkeypatch
+):
+    monkeypatch.setattr(Config, "BOSS_MAX_KEYFRAME_BYTES", 10)
+    monkeypatch.setattr(Config, "BOSS_MAX_AUDIO_EXTRACT_BYTES", 10)
+    _mock_successful_probe(monkeypatch)
+    _mock_ffmpeg(
+        monkeypatch,
+        keyframe_bytes=b"\xff\xd8" + b"x" * 100,
+        audio_bytes=b"x" * 100,
+    )
+
+    response = _upload(
+        client,
+        b"\x00\x00\x00\x18ftypisom\x00\x00\x00\x00",
+        "clip.mp4",
+        mimetype="video/mp4",
+    )
+
+    assert response.status_code == 201
+    record = response.json["data"]
+    assert record["status"] == "technical_parsed"
+    assert record["artifacts"] == []
+    assert any("file-size cap" in warning for warning in record["warnings"])
+    artifact_dir = assets_root / record["asset_id"] / "artifacts"
+    assert not artifact_dir.exists() or list(artifact_dir.iterdir()) == []
+
+
 def test_audio_and_video_are_marked_unparsed_without_semantic_claims(client):
     audio = _upload(client, b"ID3\x04\x00\x00\x00", "voice.mp3", mimetype="audio/mpeg")
     video = _upload(
@@ -128,10 +356,12 @@ def test_audio_and_video_are_marked_unparsed_without_semantic_claims(client):
     assert audio.status_code == 201
     assert audio.json["data"]["kind"] == "audio"
     assert audio.json["data"]["status"] == "uploaded_unparsed"
+    assert audio.json["data"]["artifacts"] == []
     assert "ffprobe" in audio.json["data"]["warnings"][0]
     assert video.status_code == 201
     assert video.json["data"]["kind"] == "video"
     assert video.json["data"]["status"] == "uploaded_unparsed"
+    assert video.json["data"]["artifacts"] == []
     assert "semantic parsing" in video.json["data"]["warnings"][0]
 
 

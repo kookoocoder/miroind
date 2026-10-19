@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import threading
 
 from flask import jsonify, request, send_file
@@ -26,6 +27,20 @@ from ..services.boss_scenarios import (
 )
 from ..services.boss_assets import BossAssetStore, BossAssetTooLarge
 from ..services.graph_builder import GraphBuilderService
+from ..services.boss_personas import (
+    BOSS_SIMULATION_SCHEMA_VERSION,
+    BOSS_SOURCE_KIND,
+    BOSS_TIMEZONE,
+    BossSimulationValidationError,
+    build_boss_simulation_config,
+    materialize_boss_profiles,
+    profile_dicts,
+    resolve_boss_asset_text,
+    serialize_reddit_profiles,
+    serialize_reddit_json,
+    serialize_twitter_csv,
+    serialize_twitter_profiles,
+)
 
 
 def _asset_validation_response(error: BossAssetValidationError) -> tuple:
@@ -527,12 +542,234 @@ def get_scenario_graph(scenario_id: str):
     return jsonify({"success": True, "data": record})
 
 
+def _simulation_request_object() -> tuple[dict, tuple | None]:
+    payload = request.get_json(silent=True)
+    if payload is None:
+        return {}, None
+    if not isinstance(payload, dict):
+        return {}, (
+            jsonify(
+                {
+                    "success": False,
+                    "error": "Invalid BOSS simulation request",
+                    "fields": {"payload": "must be a JSON object"},
+                }
+            ),
+            400,
+        )
+    return payload, None
+
+
+def _simulation_validation_response(error: BossSimulationValidationError) -> tuple:
+    return jsonify(
+        {
+            "success": False,
+            "error": str(error),
+            "fields": error.fields,
+        }
+    ), 400
+
+
+def _selection_value(payload: dict, plural: str, singular: str) -> list[str] | None:
+    value = payload.get(plural)
+    if value is None and plural == "audience_ids":
+        value = payload.get("audiences")
+    if value is None and plural == "persona_ids":
+        value = payload.get("personas")
+    if value is None and singular in payload:
+        value = [payload[singular]]
+    return value
+
+
+def _build_boss_simulation_preview(manifest: dict, payload: dict) -> dict:
+    if _check_manifest_hash(payload, manifest):
+        # Keep this service helper independent of Flask response handling. The
+        # route unwraps this sentinel before calling the builder.
+        raise BossSimulationValidationError(
+            {"manifest_sha256": "does not match the persisted manifest"},
+            message="BOSS scenario manifest is stale; refresh before preparing simulation",
+        )
+    seed = payload.get("seed")
+    if seed is not None and (not isinstance(seed, int) or isinstance(seed, bool)):
+        raise BossSimulationValidationError({"seed": "must be an integer"})
+    artifact_id = payload.get("artifact_id", payload.get("asset_artifact_id"))
+    if artifact_id is not None and not isinstance(artifact_id, str):
+        raise BossSimulationValidationError({"artifact_id": "must be a string"})
+    asset_id = payload.get("asset_id")
+    if asset_id is not None and not isinstance(asset_id, str):
+        raise BossSimulationValidationError({"asset_id": "must be a string"})
+
+    profiles = materialize_boss_profiles(
+        manifest,
+        audience_ids=_selection_value(payload, "audience_ids", "audience_id"),
+        persona_ids=_selection_value(payload, "persona_ids", "persona_id"),
+    )
+    resolved = resolve_boss_asset_text(
+        manifest,
+        asset_id=asset_id,
+        artifact_id=artifact_id,
+    )
+    config = build_boss_simulation_config(
+        manifest,
+        profiles,
+        asset_id=resolved["asset_id"],
+        asset_content=resolved["content"],
+        content_source_kind=resolved["content_source_kind"],
+        artifact_id=resolved.get("artifact_id"),
+        seed=seed,
+    )
+    reddit_profiles = serialize_reddit_profiles(profiles)
+    twitter_profiles = serialize_twitter_profiles(profiles)
+    return {
+        "schema_version": BOSS_SIMULATION_SCHEMA_VERSION,
+        "source_kind": BOSS_SOURCE_KIND,
+        "scenario_id": manifest["scenario_id"],
+        "simulation_id": config["simulation_id"],
+        "status": "preview",
+        "manifest_sha256": config["manifest_sha256"],
+        "asset_id": config["asset_id"],
+        "asset_sha256": config["asset_sha256"],
+        "content_source_kind": resolved["content_source_kind"],
+        "artifact_id": resolved.get("artifact_id"),
+        "timezone": BOSS_TIMEZONE,
+        "seed": config["seed"],
+        "brand_agent_id": 0,
+        "audience_agent_ids": config["audience_agent_ids"],
+        "profiles": profile_dicts(profiles),
+        "reddit_profiles": reddit_profiles,
+        "twitter_profiles": twitter_profiles,
+        "twitter_profiles_csv": serialize_twitter_csv(profiles),
+        "config": config,
+    }
+
+
+@boss_bp.route("/scenarios/<scenario_id>/simulation/prepare-preview", methods=["POST"])
+def prepare_scenario_simulation_preview(scenario_id: str):
+    """Preview deterministic BOSS profiles/config without Zep or OASIS."""
+
+    payload, error_response = _simulation_request_object()
+    if error_response:
+        return error_response
+    manifest = BossScenarioStore().get(scenario_id)
+    if manifest is None:
+        return jsonify({"success": False, "error": "BOSS scenario not found"}), 404
+    try:
+        data = _build_boss_simulation_preview(manifest, payload)
+    except BossSimulationValidationError as error:
+        if "manifest_sha256" in error.fields and payload.get("manifest_sha256") is not None:
+            return jsonify(
+                {
+                    "success": False,
+                    "error": str(error),
+                    "fields": error.fields,
+                }
+            ), 409
+        return _simulation_validation_response(error)
+    except Exception:
+        return jsonify(
+            {
+                "success": False,
+                "error": "BOSS simulation preview could not be generated",
+                "fields": {},
+            }
+        ), 500
+    return jsonify({"success": True, "data": data})
+
+
+@boss_bp.route("/scenarios/<scenario_id>/simulation/prepare", methods=["POST"])
+def prepare_scenario_simulation(scenario_id: str):
+    """Persist deterministic BOSS simulation artifacts, without starting OASIS."""
+
+    payload, error_response = _simulation_request_object()
+    if error_response:
+        return error_response
+    store = BossScenarioStore()
+    manifest = store.get(scenario_id)
+    if manifest is None:
+        return jsonify({"success": False, "error": "BOSS scenario not found"}), 404
+    try:
+        preview = _build_boss_simulation_preview(manifest, payload)
+        record = {
+            key: value
+            for key, value in preview.items()
+            if key != "twitter_profiles_csv"
+        }
+        record["status"] = "ready"
+        record["artifact_files"] = {
+            "reddit_profiles": "simulation/reddit_profiles.json",
+            "twitter_profiles": "simulation/twitter_profiles.csv",
+            "config": "simulation/simulation_config.json",
+        }
+        store.save_simulation_artifact(
+            scenario_id,
+            record["artifact_files"]["reddit_profiles"],
+            serialize_reddit_json(
+                materialize_boss_profiles(
+                    manifest,
+                    audience_ids=_selection_value(payload, "audience_ids", "audience_id"),
+                    persona_ids=_selection_value(payload, "persona_ids", "persona_id"),
+                )
+            ),
+        )
+        profiles = materialize_boss_profiles(
+            manifest,
+            audience_ids=_selection_value(payload, "audience_ids", "audience_id"),
+            persona_ids=_selection_value(payload, "persona_ids", "persona_id"),
+        )
+        store.save_simulation_artifact(
+            scenario_id,
+            record["artifact_files"]["twitter_profiles"],
+            serialize_twitter_csv(profiles),
+        )
+        store.save_simulation_artifact(
+            scenario_id,
+            record["artifact_files"]["config"],
+            json.dumps(record["config"], ensure_ascii=False, sort_keys=True, indent=2) + "\n",
+        )
+        store.save_simulation_record(scenario_id, record)
+    except BossSimulationValidationError as error:
+        if "manifest_sha256" in error.fields and payload.get("manifest_sha256") is not None:
+            return jsonify(
+                {
+                    "success": False,
+                    "error": str(error),
+                    "fields": error.fields,
+                }
+            ), 409
+        return _simulation_validation_response(error)
+    except Exception:
+        return jsonify(
+            {
+                "success": False,
+                "error": "BOSS simulation preparation could not be persisted",
+                "fields": {},
+            }
+        ), 500
+    return jsonify({"success": True, "data": record})
+
+
+@boss_bp.route("/scenarios/<scenario_id>/simulation", methods=["GET"])
+def get_scenario_simulation(scenario_id: str):
+    """Read a persisted BOSS simulation-preparation record."""
+
+    store = BossScenarioStore()
+    if store.get(scenario_id) is None:
+        return jsonify({"success": False, "error": "BOSS scenario not found"}), 404
+    record = store.get_simulation_record(scenario_id)
+    if record is None:
+        return jsonify({"success": False, "error": "BOSS simulation record not found"}), 404
+    return jsonify({"success": True, "data": record})
+
+
 __all__ = [
     "build_scenario_graph",
     "create_revision",
     "create_scenario",
     "get_scenario",
     "get_scenario_graph",
+    "get_scenario_simulation",
     "list_scenarios",
     "prepare_scenario_graph",
+    "prepare_scenario_simulation",
+    "prepare_scenario_simulation_preview",
 ]
