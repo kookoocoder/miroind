@@ -40,8 +40,39 @@ class Config:
     # still require both provider keys.
     MIROIND_OFFLINE_ONLY = os.environ.get('MIROIND_OFFLINE_ONLY', 'false').lower() == 'true'
     
-    # 文件上传配置
-    MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB
+    # BOSS media uploads use a separate catalog and keep binary content out of
+    # scenario JSON.  The global Flask limit remains at least the legacy 50MB
+    # limit while allowing the BOSS-specific default of 100MB.
+    BOSS_ASSETS_DIR = os.environ.get(
+        'BOSS_ASSETS_DIR',
+        os.path.join(os.path.dirname(__file__), '../uploads/boss/assets')
+    )
+    BOSS_MAX_ASSET_BYTES = int(os.environ.get('BOSS_MAX_ASSET_BYTES', str(100 * 1024 * 1024)))
+    BOSS_ALLOWED_MEDIA_MIMES = frozenset(
+        item.strip().lower()
+        for item in os.environ.get(
+            'BOSS_ALLOWED_MEDIA_MIMES',
+            ','.join(
+                (
+                    'text/plain', 'text/markdown', 'text/csv', 'text/tab-separated-values',
+                    'text/html', 'application/json', 'application/xml', 'application/yaml',
+                    'application/rtf', 'application/pdf',
+                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                    'image/png', 'image/jpeg', 'image/gif', 'image/webp',
+                    'audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/flac', 'audio/mp4',
+                    'video/mp4', 'video/quicktime', 'video/webm', 'video/x-msvideo',
+                    'video/x-matroska',
+                )
+            ),
+        ).split(',')
+        if item.strip()
+    )
+
+    # Existing upstream uploads retain their 50MB behavior.  BOSS requests
+    # are still checked against BOSS_MAX_ASSET_BYTES in the catalog service.
+    MAX_CONTENT_LENGTH = max(50 * 1024 * 1024, BOSS_MAX_ASSET_BYTES)
     UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), '../uploads')
     ALLOWED_EXTENSIONS = {'pdf', 'md', 'txt', 'markdown'}
 
@@ -50,6 +81,26 @@ class Config:
         'MIROIND_RUNS_DIR',
         os.path.join(os.path.dirname(__file__), '../uploads/miroind/runs')
     )
+
+    BOSS_SCENARIOS_DIR = os.environ.get(
+        'BOSS_SCENARIOS_DIR',
+        os.path.join(os.path.dirname(__file__), '../uploads/boss/scenarios')
+    )
+
+    # Optional model-backed BOSS reviews. These values are intentionally
+    # environment-only; credentials must never be persisted in run records.
+    BOSS_MODEL_ENABLED = os.environ.get('BOSS_MODEL_ENABLED', 'false').lower() == 'true'
+    BOSS_MODEL_PROVIDER = os.environ.get('BOSS_MODEL_PROVIDER', 'opencode')
+    _BOSS_MODEL_API_KEY = os.environ.get('BOSS_MODEL_API_KEY')
+    BOSS_MODEL_API_KEY = (
+        _BOSS_MODEL_API_KEY
+        if _BOSS_MODEL_API_KEY and _BOSS_MODEL_API_KEY != 'your_model_api_key_here'
+        else os.environ.get('DEEPSEEK_API_KEY')
+    )
+    BOSS_MODEL_BASE_URL = os.environ.get('BOSS_MODEL_BASE_URL', 'https://api.deepseek.com/v1')
+    BOSS_MODEL_NAME = os.environ.get('BOSS_MODEL_NAME', 'omnirush/gpt-6-astra')
+    BOSS_MODEL_MAX_TOKENS = int(os.environ.get('BOSS_MODEL_MAX_TOKENS', '1200'))
+    BOSS_MODEL_TIMEOUT_SECONDS = int(os.environ.get('BOSS_MODEL_TIMEOUT_SECONDS', '120'))
     
     # 文本处理配置
     DEFAULT_CHUNK_SIZE = 500  # 默认切块大小
@@ -78,11 +129,18 @@ class Config:
     def validate(cls) -> list[str]:
         """验证必要配置"""
         errors: list[str] = []
-        if not cls.MIROIND_OFFLINE_ONLY:
+        if not cls.MIROIND_OFFLINE_ONLY and not cls.BOSS_MODEL_ENABLED:
             if not cls.LLM_API_KEY:
                 errors.append("LLM_API_KEY 未配置")
             if not cls.ZEP_API_KEY:
                 errors.append("ZEP_API_KEY 未配置")
+        elif (
+            not cls.MIROIND_OFFLINE_ONLY
+            and cls.BOSS_MODEL_ENABLED
+            and cls.BOSS_MODEL_PROVIDER != 'opencode'
+            and not cls.BOSS_MODEL_API_KEY
+        ):
+            errors.append("BOSS_MODEL_API_KEY or DEEPSEEK_API_KEY 未配置")
         if os.environ.get("ZEP_API_URL"):
             errors.append("ZEP_API_URL 不受支持；MiroFish 仅连接 Zep Cloud")
         if cls.DEBUG:
