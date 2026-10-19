@@ -5,38 +5,39 @@
         <span class="boss-logo-mark">B</span>
         <span>BOSS</span>
       </router-link>
-      <div class="boss-nav-center">Brand Outcome Signal System</div>
+      <div class="boss-nav-center">India-context message review</div>
       <nav class="boss-nav-actions" aria-label="Primary navigation">
         <a href="#method">Method</a>
-        <router-link to="/miroind" class="nav-cta">Open message lab <span>↗</span></router-link>
+        <router-link to="/miroind" class="nav-cta">Review a message <span>↗</span></router-link>
       </nav>
     </header>
 
     <section class="boss-hero">
-      <div class="hero-kicker"><span class="pulse-dot"></span> BOSS / INDIA MESSAGE LAB</div>
+      <div class="hero-kicker"><span class="pulse-dot"></span> BOSS / INDIA-CONTEXT REVIEW</div>
       <div class="hero-grid">
         <div class="hero-copy">
-          <h1>Make the<br /><em>right</em> impression.</h1>
+          <h1>Know how it<br /><em>may</em> land.</h1>
           <p>
-            BOSS helps you pressure-test a message before the audience does. See the risks,
-            tensions, and opportunities hiding in plain sight.
+            Review a message through a defined Indian audience context before you publish.
+            Find the risks, disagreements, and edits worth taking to real people.
           </p>
           <div class="hero-actions">
-            <router-link to="/miroind" class="boss-button boss-button-primary">Start a stress test <span>→</span></router-link>
-            <a href="#method" class="text-link">See how it works <span>↓</span></a>
+            <router-link to="/miroind" class="boss-button boss-button-primary">Review a message <span>→</span></router-link>
+            <a href="#method" class="text-link">How it works <span>↓</span></a>
           </div>
         </div>
-        <div class="hero-visual" aria-label="BOSS message analysis preview">
-          <div class="orbit orbit-one"></div>
-          <div class="orbit orbit-two"></div>
-          <div class="visual-core">
-            <span class="core-label">BOSS</span>
-            <strong>Signal<br />over noise.</strong>
-            <span class="core-index">01 — 04</span>
+        <div class="hero-preview" aria-label="Example BOSS message review">
+          <div class="preview-topline"><span>EXAMPLE REVIEW</span><span>01 / 03</span></div>
+          <p class="preview-label">MESSAGE</p>
+          <blockquote>“Hurry. Pay ₹999 today to unlock our best plan.”</blockquote>
+          <div class="preview-context">
+            <p class="preview-label">AUDIENCE CONTEXT</p>
+            <strong>Rajasthan · Tier 2 · small shop owners</strong>
           </div>
-          <span class="float-label label-top">AUDIENCE / REAL CONTEXT</span>
-          <span class="float-label label-right">RISK / DETECTED</span>
-          <span class="float-label label-bottom">DECISION / YOURS</span>
+          <div class="preview-finding">
+            <span class="finding-mark">!</span>
+            <div><p class="preview-label">BOSS FINDS</p><strong>Urgency may hide the terms.</strong><small>Add price conditions and proof.</small></div>
+          </div>
         </div>
       </div>
       <div class="hero-meta">
@@ -49,34 +50,34 @@
       <div class="section-intro">
         <div>
           <p class="section-number">01 / THE BOSS METHOD</p>
-          <h2>Less guessing.<br /><span>More signal.</span></h2>
+          <h2>Make the next<br /><span>decision clearer.</span></h2>
         </div>
         <p>
-          Good communication is not just what you meant. It is what people hear, assume,
-          question, and repeat. BOSS makes those layers visible before launch day.
+          Start with the message, then define the Indian context that matters: region,
+          city tier, occupation, affordability, and local expression when relevant.
         </p>
       </div>
       <div class="method-grid">
         <article class="method-card featured-card">
           <span class="card-index">01</span>
-          <div class="card-icon">◎</div>
-          <h3>Frame the context</h3>
-          <p>Define your brand, your boundaries, and the exact audience lens you want to understand.</p>
+          <div class="card-icon">01</div>
+          <h3>Set the context</h3>
+          <p>Describe the brand, the message, and the Indian audience situation you want to review.</p>
           <span class="card-caption">Brand + audience</span>
         </article>
         <article class="method-card">
           <span class="card-index">02</span>
-          <div class="card-icon">◌</div>
-          <h3>Stress the message</h3>
-          <p>Run your copy through inspectable Indian research lenses built to challenge easy assumptions.</p>
-          <span class="card-caption">Persona signals</span>
+          <div class="card-icon">02</div>
+          <h3>Review the signal</h3>
+          <p>See what may be misunderstood, questioned, or read differently across the audience context.</p>
+          <span class="card-caption">Audience lenses</span>
         </article>
         <article class="method-card dark-card">
           <span class="card-index">03</span>
-          <div class="card-icon">↗</div>
-          <h3>Make the call</h3>
-          <p>Get specific risks, disagreements, and edits you can take into real-world validation.</p>
-          <span class="card-caption">Clear next moves</span>
+          <div class="card-icon">03</div>
+          <h3>Choose the move</h3>
+          <p>Take clear edits and validation questions into the next conversation with your audience.</p>
+          <span class="card-caption">Practical next steps</span>
         </article>
       </div>
     </section>
@@ -85,18 +86,18 @@
       <div class="signal-panel">
         <div class="signal-heading">
           <p class="section-number light-number">02 / WHAT BOSS SURFACES</p>
-          <h2>The uncomfortable<br /><span>useful stuff.</span></h2>
+          <h2>What the review<br /><span>puts on the table.</span></h2>
         </div>
         <div class="signal-list">
-          <div class="signal-row"><span>01</span><strong>Misreadings</strong><p>What could sound salesy, vague, or out of touch?</p></div>
-          <div class="signal-row"><span>02</span><strong>Trust gaps</strong><p>Which promises need proof, terms, or more context?</p></div>
-          <div class="signal-row"><span>03</span><strong>Audience splits</strong><p>Where will one segment lean in while another hesitates?</p></div>
-          <div class="signal-row"><span>04</span><strong>Better moves</strong><p>What can you change without losing your brand voice?</p></div>
+          <div class="signal-row"><span>01</span><strong>Misreadings</strong><p>Where could the wording be unclear, salesy, or out of context?</p></div>
+          <div class="signal-row"><span>02</span><strong>Trust gaps</strong><p>Which promises need terms, evidence, or a more careful claim?</p></div>
+          <div class="signal-row"><span>03</span><strong>Audience differences</strong><p>Which people may respond differently because of their situation?</p></div>
+          <div class="signal-row"><span>04</span><strong>Possible edits</strong><p>What can change without losing the brand’s voice?</p></div>
         </div>
       </div>
       <aside class="quote-card">
         <div class="quote-mark">“</div>
-        <p>We do not predict what India thinks. We help you ask sharper questions before you ask the market.</p>
+        <p>Not market evidence. A clearer starting point for the next real conversation.</p>
         <span>BOSS PRINCIPLE / 04</span>
       </aside>
     </section>
@@ -104,9 +105,9 @@
     <section class="launch-section">
       <div>
         <p class="section-number">03 / READY WHEN YOU ARE</p>
-        <h2>Bring the message.<br /><span>Leave with a sharper one.</span></h2>
+        <h2>Bring the message.<br /><span>Leave with a clearer next move.</span></h2>
       </div>
-      <router-link to="/miroind" class="boss-button boss-button-primary">Enter the message lab <span>↗</span></router-link>
+      <router-link to="/miroind" class="boss-button boss-button-primary">Create a review <span>↗</span></router-link>
     </section>
 
     <footer class="boss-footer">
@@ -127,9 +128,9 @@
   --ink: #e9efe6;
   --muted: #9aa89b;
   --line: rgba(219, 232, 215, .18);
-  --lime: #d5f26b;
-  --mint: #c6e8ce;
-  --orange: #ff7448;
+  --lime: #d8b46a;
+  --mint: #c6d9c8;
+  --orange: #d8b46a;
   min-height: 100vh;
   overflow: hidden;
   color: var(--ink);
@@ -212,7 +213,7 @@
 }
 
 .hero-kicker { display: flex; align-items: center; gap: 10px; color: var(--lime); }
-.pulse-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 0 5px rgba(213, 242, 107, .1); }
+.pulse-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 0 5px rgba(216, 180, 106, .12); }
 .hero-grid { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(370px, .92fr); align-items: center; gap: clamp(30px, 7vw, 130px); }
 .hero-copy h1 { margin: 27px 0 26px; color: #f2f5ef; font-size: clamp(60px, 9vw, 138px); font-weight: 700; line-height: .84; letter-spacing: -.085em; }
 .hero-copy h1 em { color: var(--lime); font-style: normal; }
@@ -226,7 +227,17 @@
 .text-link span { margin-left: 8px; color: var(--lime); }
 .text-link:hover { color: var(--ink); }
 
-.hero-visual { position: relative; min-height: 420px; }
+.hero-preview { align-self: center; max-width: 480px; border: 1px solid rgba(219, 232, 215, .22); padding: 25px; background: #151e19; box-shadow: 18px 18px 0 rgba(216, 180, 106, .12); }
+.preview-topline { display: flex; justify-content: space-between; padding-bottom: 17px; border-bottom: 1px solid rgba(219, 232, 215, .16); color: #7f9182; font-size: 10px; font-weight: 800; letter-spacing: .14em; }
+.preview-label { margin: 0 0 9px; color: #8ca18e; font-size: 9px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+.hero-preview blockquote { margin: 27px 0 30px; border: 0; padding: 0; color: #f0f4eb; font-size: clamp(22px, 3vw, 31px); font-weight: 550; line-height: 1.14; letter-spacing: -.05em; }
+.preview-context { padding: 15px 0; border-top: 1px solid rgba(219, 232, 215, .16); border-bottom: 1px solid rgba(219, 232, 215, .16); }
+.preview-context strong { color: #c6d9c8; font-size: 13px; font-weight: 500; }
+.preview-finding { display: flex; align-items: flex-start; gap: 13px; margin-top: 18px; }
+.finding-mark { display: grid; width: 25px; height: 25px; flex: 0 0 auto; place-items: center; color: #111710; background: var(--lime); font-size: 14px; font-weight: 900; }
+.preview-finding strong, .preview-finding small { display: block; }
+.preview-finding strong { color: #f0f4eb; font-size: 14px; font-weight: 600; }
+.preview-finding small { margin-top: 6px; color: #9aab9c; font-size: 12px; }
 .visual-core { position: absolute; z-index: 2; top: 50%; left: 50%; display: flex; width: 235px; height: 235px; flex-direction: column; justify-content: space-between; transform: translate(-50%, -50%); border: 1px solid rgba(213, 242, 107, .7); border-radius: 50%; padding: 46px 40px 38px; background: radial-gradient(circle at 32% 24%, rgba(213, 242, 107, .2), transparent 38%), #18221d; box-shadow: 0 0 75px rgba(213, 242, 107, .09); }
 .visual-core strong { color: #f2f5ef; font-size: 26px; line-height: .98; letter-spacing: -.06em; }
 .core-label, .core-index { color: var(--lime); }

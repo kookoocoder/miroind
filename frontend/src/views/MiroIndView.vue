@@ -11,17 +11,17 @@
           </div>
         </div>
       </div>
-      <div class="header-note">Synthetic exploration · not a prediction</div>
+      <div class="header-note">Synthetic review · validate with real people</div>
     </header>
 
     <section class="hero-card">
       <div>
-        <p class="eyebrow accent">PRE-PUBLISH STRESS TEST</p>
-        <h2>See your message through a specific Indian audience lens.</h2>
+        <p class="eyebrow accent">INDIA-CONTEXT MESSAGE REVIEW</p>
+        <h2>Find what may be misunderstood before you publish.</h2>
         <p class="hero-copy">
           Describe your brand, paste a text asset, and define the audience you want to understand.
-          BOSS returns directional risks, disagreements, and practical improvements without sending
-          your scenario to a model or external service in this offline MVP.
+          Give BOSS the message and the audience context that matters. You will get focused risks,
+          audience differences, and practical edits to take into your next review.
         </p>
       </div>
       <div class="principles">
@@ -35,8 +35,8 @@
       <form class="scenario-form panel" @submit.prevent="submitRun" novalidate>
         <div class="panel-heading">
           <div>
-            <p class="eyebrow">01 / CONTEXT</p>
-            <h2>Set up a stress test</h2>
+            <p class="eyebrow">01 / REVIEW INPUT</p>
+            <h2>Review a message</h2>
           </div>
           <span class="required-note">* Required</span>
         </div>
@@ -142,8 +142,10 @@
           </div>
         </fieldset>
 
-        <fieldset>
-          <legend>Simulation settings</legend>
+        <details class="advanced-settings">
+          <summary>Review settings <span>Optional</span></summary>
+          <fieldset>
+          <legend>Output and audience depth</legend>
           <div class="field-grid three-up">
             <label>
               <span>Report output</span>
@@ -163,21 +165,31 @@
               <small v-if="errors['config.budget']" class="field-error">{{ errors['config.budget'] }}</small>
             </label>
           </div>
-          <p class="helper-copy">The current MVP uses deterministic rules and templates. Persona count and budget are recorded for reproducibility.</p>
-        </fieldset>
+          <label>
+            <span>Review engine</span>
+            <select v-model="form.config.analysis_mode">
+              <option value="offline">Offline BOSS review</option>
+              <option value="model">Configured model review</option>
+            </select>
+            <small class="settings-note">Model review uses the provider configured on the server. It never places credentials in the browser.</small>
+            <small v-if="errors['config.analysis_mode']" class="field-error">{{ errors['config.analysis_mode'] }}</small>
+          </label>
+          <p class="helper-copy">These settings affect the review depth and are recorded with the result.</p>
+          </fieldset>
+        </details>
 
         <div v-if="formError" class="form-error" role="alert">{{ formError }}</div>
         <button class="primary-button" type="submit" :disabled="loading">
           <span v-if="loading" class="spinner" aria-hidden="true"></span>
-          {{ loading ? 'Running stress test…' : 'Run BOSS stress test →' }}
+          {{ loading ? 'Creating review…' : 'Create review →' }}
         </button>
       </form>
 
       <aside class="side-column">
         <section class="panel saved-run-panel">
-          <p class="eyebrow">RETURN TO A RESULT</p>
-          <h2>Load saved run</h2>
-          <p>Runs are stored as JSON by the backend. Paste a run ID to read the exact report again.</p>
+          <p class="eyebrow">RETURN TO A REVIEW</p>
+          <h2>Load saved review</h2>
+          <p>Paste a saved review ID to reopen the exact result.</p>
           <div class="load-row">
             <input v-model="savedRunId" type="text" placeholder="miroind_…" @keyup.enter="loadSavedRun" />
             <button class="secondary-button" type="button" :disabled="loadingSaved" @click="loadSavedRun">
@@ -187,8 +199,8 @@
           <small v-if="loadError" class="field-error">{{ loadError }}</small>
         </section>
         <section class="panel guidance-panel">
-          <p class="eyebrow">HOW TO READ IT</p>
-          <h2>Exploration, not proof.</h2>
+          <p class="eyebrow">ONE IMPORTANT NOTE</p>
+          <h2>Useful direction, not proof.</h2>
           <ul>
             <li>Use risks to form questions for real audience research.</li>
             <li>Compare disagreements instead of chasing a single score.</li>
@@ -207,10 +219,13 @@
           <p class="run-id">Run ID: <code>{{ runId }}</code></p>
         </div>
         <div class="toolbar-actions">
+          <span v-if="copyStatus" class="copy-status" role="status">{{ copyStatus }}</span>
+          <button class="secondary-button" type="button" @click="copyReport">Copy report</button>
+          <button class="secondary-button" type="button" @click="downloadReport">Download .md</button>
           <button class="secondary-button" type="button" :disabled="loadingSaved" @click="reloadCurrentRun">
             {{ loadingSaved ? 'Loading…' : 'Reload saved result' }}
           </button>
-          <button class="primary-button compact" type="button" @click="startNewRun">New stress test</button>
+          <button class="primary-button compact" type="button" @click="startNewRun">New review</button>
         </div>
       </div>
 
@@ -218,6 +233,27 @@
         <strong>Keep the human in the loop.</strong>
         This report contains deterministic synthetic hypotheses. It is not a survey, market truth, prediction, or substitute for real user research.
       </div>
+
+      <section v-if="report.model_review?.status === 'completed'" class="model-review-card">
+        <div class="model-review-heading">
+          <div>
+            <p class="eyebrow accent">MODEL REVIEW</p>
+            <h3>Provider-backed second view</h3>
+          </div>
+          <span class="model-confidence">{{ report.model_review.confidence }} confidence</span>
+        </div>
+        <p class="model-assessment">{{ report.model_review.assessment }}</p>
+        <div class="model-columns">
+          <div>
+            <p class="mini-label">Audience differences</p>
+            <ul class="plain-list"><li v-for="(item, index) in report.model_review.audience_differences" :key="`model-audience-${index}`">{{ item }}</li></ul>
+          </div>
+          <div>
+            <p class="mini-label">Model recommendations</p>
+            <ul class="plain-list"><li v-for="(item, index) in report.model_review.recommendations" :key="`model-rec-${index}`">{{ item }}</li></ul>
+          </div>
+        </div>
+      </section>
 
       <div class="report-overview">
         <article class="report-card impact-card">
@@ -362,6 +398,7 @@ const form = reactive({
     interaction_format: 'short_post',
     persona_count: 6,
     budget: 20,
+    analysis_mode: 'offline',
   },
 })
 
@@ -375,6 +412,7 @@ const formError = ref('')
 const loadError = ref('')
 const loading = ref(false)
 const loadingSaved = ref(false)
+const copyStatus = ref('')
 
 const splitList = (value) => value.split(',').map((item) => item.trim()).filter(Boolean)
 
@@ -473,7 +511,82 @@ const startNewRun = () => {
   errors.value = {}
   formError.value = ''
   loadError.value = ''
+  copyStatus.value = ''
   window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+const markdownList = (title, items = []) => {
+  if (!items.length) return `### ${title}\n\n_None reported._\n`
+  return `### ${title}\n\n${items.map((item) => `- ${item}`).join('\n')}\n`
+}
+
+const buildReportMarkdown = () => {
+  const current = report.value
+  if (!current) return ''
+  const scenario = current.scenario || {}
+  const audience = current.audience_summary || {}
+  const lines = [
+    `# BOSS India-context message review`,
+    `\n**Run ID:** ${runId.value}`,
+    `\n## Summary\n\n- **Brand:** ${scenario.brand_name || 'Not provided'}`,
+    `- **Message:** ${scenario.asset_title || 'Not provided'}`,
+    `- **Audience:** ${audience.region || 'Not provided'} · ${audience.occupation || 'Not provided'} · ${audience.city_tier || 'Not provided'}`,
+    `- **Overall direction:** ${current.overall_image_impact_direction_label || current.overall_image_impact_direction || 'Not provided'}`,
+    `\n${scenario.summary || ''}\n`,
+  ]
+  if (current.model_review?.status === 'completed') {
+    lines.push(`## Model review\n\n${current.model_review.assessment || ''}\n`)
+    lines.push(markdownList('Model recommendations', current.model_review.recommendations))
+    lines.push(markdownList('Audience differences', current.model_review.audience_differences))
+  }
+  lines.push(markdownList('Positive reactions', current.positive_reactions))
+  lines.push(markdownList('Negative reactions', current.negative_reactions))
+  lines.push(markdownList('Mixed reactions', current.mixed_reactions))
+  lines.push(`### Risk points\n\n${(current.risk_points || []).length ? current.risk_points.map((risk) => `- **${risk.label} (${risk.severity})** — ${risk.why_it_matters}\n  - Evidence: ${risk.evidence}`).join('\n') : '_No configured risk signal was detected._'}\n`)
+  lines.push(markdownList('Recommendations', current.recommendations))
+  lines.push(`### Rewrite options\n\n${(current.rewrite_options || []).map((rewrite) => `#### ${rewrite.label}\n\n${rewrite.text}\n\n_${rewrite.rationale}_`).join('\n\n') || '_None reported._'}\n`)
+  lines.push(markdownList('Potential misunderstandings', current.misunderstandings))
+  lines.push(markdownList('Assumptions', current.assumptions))
+  lines.push(markdownList('Uncertainty', current.uncertainty))
+  lines.push(markdownList('Limitations', current.limitations))
+  lines.push('\n---\n\n_Synthetic review, not market evidence. Validate with real people._\n')
+  return lines.join('\n')
+}
+
+const copyReport = async () => {
+  const markdown = buildReportMarkdown()
+  if (!markdown) return
+  try {
+    await navigator.clipboard.writeText(markdown)
+  } catch {
+    const textarea = document.createElement('textarea')
+    textarea.value = markdown
+    textarea.setAttribute('readonly', '')
+    textarea.style.position = 'fixed'
+    textarea.style.opacity = '0'
+    document.body.appendChild(textarea)
+    textarea.select()
+    document.execCommand('copy')
+    textarea.remove()
+  }
+  copyStatus.value = 'Copied'
+  window.setTimeout(() => { copyStatus.value = '' }, 1800)
+}
+
+const downloadReport = () => {
+  const markdown = buildReportMarkdown()
+  if (!markdown) return
+  const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `boss-review-${runId.value || 'report'}.md`
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+  copyStatus.value = 'Downloaded'
+  window.setTimeout(() => { copyStatus.value = '' }, 1800)
 }
 
 const formatMetadata = (value) => {
@@ -557,7 +670,7 @@ const formatMetadata = (value) => {
   margin-bottom: 24px;
   padding: 34px;
   color: #f8fbf5;
-  background: var(--green-dark);
+  background: var(--green);
 }
 
 .hero-card h2 { max-width: 700px; margin: 0 0 13px; font-size: clamp(29px, 4vw, 54px); line-height: 1.04; letter-spacing: -0.055em; }
@@ -589,6 +702,14 @@ input:focus, textarea:focus, select:focus { border-color: var(--green); box-shad
 .field-footer { justify-content: space-between; align-items: flex-start; gap: 12px; }
 .counter { margin-top: 6px; color: var(--muted); font-size: 11px; white-space: nowrap; }
 .helper-copy, .side-column p, .empty-copy { color: var(--muted); font-size: 12px; line-height: 1.6; }
+.settings-note { display: block; margin-top: 6px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.advanced-settings { margin-bottom: 22px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.advanced-settings summary { display: flex; justify-content: space-between; padding: 16px 0; color: var(--green); cursor: pointer; font-size: 12px; font-weight: 800; list-style: none; text-transform: uppercase; }
+.advanced-settings summary::-webkit-details-marker { display: none; }
+.advanced-settings summary::after { content: '+'; color: var(--muted); font-size: 17px; font-weight: 400; }
+.advanced-settings[open] summary::after { content: '−'; }
+.advanced-settings summary span { margin-left: auto; margin-right: 12px; color: var(--muted); font-size: 10px; font-weight: 500; text-transform: none; }
+.advanced-settings fieldset { margin-bottom: 0; padding-bottom: 20px; }
 .form-error { margin: 10px 0 16px; border-left: 3px solid #b33d2e; padding: 10px 12px; color: #8f2e23; background: #fff0ec; font-size: 12px; }
 
 button { border: 0; border-radius: 0; cursor: pointer; font: inherit; }
@@ -612,10 +733,18 @@ button:disabled { cursor: wait; opacity: .6; }
 
 .report-shell { margin-top: 18px; }
 .report-toolbar { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; margin-bottom: 20px; }
-.toolbar-actions { gap: 9px; }
+.toolbar-actions { flex-wrap: wrap; justify-content: flex-end; gap: 9px; }
+.copy-status { color: var(--green); font-size: 11px; font-weight: 800; }
 .run-id { margin: 9px 0 0; color: var(--muted); font-size: 12px; }
 code { padding: 3px 5px; color: var(--green-dark); background: #e6eee8; font-size: 11px; }
 .report-disclaimer { margin-bottom: 18px; border-left: 4px solid var(--orange); padding: 14px 16px; color: #604c3e; background: #fff4ec; font-size: 12px; line-height: 1.6; }
+.model-review-card { margin-bottom: 18px; border: 1px solid #b8cdbb; padding: 22px; background: #edf5eb; }
+.model-review-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; }
+.model-review-heading h3 { margin: 0; font-size: 18px; letter-spacing: -.03em; }
+.model-confidence { padding: 6px 9px; color: var(--green); background: #d5e6d6; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+.model-assessment { max-width: 850px; margin: 18px 0; color: var(--ink) !important; font-size: 15px !important; }
+.model-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; border-top: 1px solid #c8d9c9; padding-top: 16px; }
+.mini-label { margin: 0 0 10px !important; color: var(--green) !important; font-size: 10px !important; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
 .report-overview { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 18px; margin-bottom: 18px; }
 .report-card { min-width: 0; padding: 22px; }
 .report-card h3 { margin: 0 0 15px; font-size: 15px; letter-spacing: -0.02em; }
