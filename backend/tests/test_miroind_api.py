@@ -1,8 +1,11 @@
 import json
+from types import SimpleNamespace
 
 import pytest
 
 from app import create_app
+from app.config import Config
+from app.services import miroind as miroind_service
 from app.services.miroind import MiroIndService
 
 
@@ -164,6 +167,64 @@ def test_asset_can_carry_a_regional_context_signal_without_changing_product_scop
     report = response.json["data"]["report"]
     assert report["usage_metadata"]["asset_language"] == "Marathi"
     assert report["audience_summary"]["language"] == "Marathi"
+
+
+def test_model_mode_uses_configured_provider_without_persisting_credentials(client, monkeypatch):
+    class FakeClient:
+        def __init__(self, **kwargs):
+            assert kwargs["api_key"] == "test-model-key"
+            assert kwargs["model"] == "test-model"
+
+        def chat_json(self, messages, **kwargs):
+            assert "Maharashtra" in messages[1]["content"]
+            return {
+                "impact_direction": "mixed",
+                "assessment": "The offer is direct, but the urgency needs clearer terms.",
+                "confidence": "medium",
+                "risk_points": [],
+                "misunderstandings": ["Readers may not know the eligibility conditions."],
+                "audience_differences": ["A small shop owner may prioritise predictable total cost."],
+                "recommendations": ["State eligibility and total cost before the call to action."],
+                "rewrite_options": [],
+            }
+
+    monkeypatch.setattr(miroind_service, "LLMClient", FakeClient)
+    monkeypatch.setattr(Config, "MIROIND_OFFLINE_ONLY", False)
+    monkeypatch.setattr(Config, "BOSS_MODEL_ENABLED", True)
+    monkeypatch.setattr(Config, "BOSS_MODEL_PROVIDER", "direct")
+    monkeypatch.setattr(Config, "BOSS_MODEL_API_KEY", "test-model-key")
+    monkeypatch.setattr(Config, "BOSS_MODEL_NAME", "test-model")
+
+    payload = _payload(config={"analysis_mode": "model"})
+    response = client.post("/api/miroind/runs", json=payload)
+
+    assert response.status_code == 200
+    data = response.json["data"]
+    report = data["report"]
+    assert report["model_review"]["status"] == "completed"
+    assert report["model_review"]["assessment"].startswith("The offer")
+    assert report["usage_metadata"]["model_used"] is True
+    assert report["usage_metadata"]["network_calls"] is True
+    assert report["usage_metadata"]["offline"] is False
+    stored = json.dumps(data, ensure_ascii=False)
+    assert "test-model-key" not in stored
+
+
+def test_opencode_json_event_parser_extracts_model_object(monkeypatch):
+    monkeypatch.setattr(miroind_service.shutil, "which", lambda name: __file__)
+    monkeypatch.setattr(
+        miroind_service.subprocess,
+        "run",
+        lambda *args, **kwargs: SimpleNamespace(
+            returncode=0,
+            stdout='{"type":"step_start"}\n{"type":"text","part":{"text":"{\\"impact_direction\\":\\"mixed\\"}"}}\n',
+        ),
+    )
+    monkeypatch.setattr(Config, "BOSS_MODEL_NAME", "omnirush/gpt-6-astra")
+
+    result = miroind_service._call_opencode([{"role": "user", "content": "Return JSON."}])
+
+    assert result == {"impact_direction": "mixed"}
 
 
 def test_run_is_persisted_and_get_returns_same_result(client, tmp_path):

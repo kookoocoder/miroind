@@ -9,14 +9,21 @@ from __future__ import annotations
 
 import copy
 import json
+import logging
 import os
 import re
+import shutil
+import subprocess
 import tempfile
 import uuid
 from pathlib import Path
 from typing import Any, Mapping
 
 from ..config import Config
+from ..utils.llm_client import LLMClient
+
+
+logger = logging.getLogger(__name__)
 
 
 RUN_ID_PATTERN = re.compile(r"^miroind_[a-f0-9]{24}$")
@@ -544,6 +551,11 @@ def validate_payload(payload: Any) -> dict[str, Any]:
             fields["config.interaction_format"] = "must be 'short_post'"
         else:
             normalized_config["interaction_format"] = interaction_format
+        analysis_mode = config.get("analysis_mode", "offline")
+        if analysis_mode not in {"offline", "model"}:
+            fields["config.analysis_mode"] = "must be one of: offline, model"
+        else:
+            normalized_config["analysis_mode"] = analysis_mode
         persona_count = config.get("persona_count")
         if (
             not isinstance(persona_count, int)
@@ -892,7 +904,7 @@ def _build_report(payload: Mapping[str, Any]) -> dict[str, Any]:
         )
         recommendations = _unique(recommendations)
 
-    return {
+    report = {
         "title": _t(language, "report_title"),
         "labels": _labels(language),
         "scenario": {
@@ -955,6 +967,218 @@ def _build_report(payload: Mapping[str, Any]) -> dict[str, Any]:
             "translation_quality_note": _t(language, "quality_note"),
         },
     }
+
+    if config.get("analysis_mode") == "model":
+        report["model_review"] = _run_model_review(payload, report)
+        model_review = report["model_review"]
+        report["usage_metadata"].update(
+            {
+                "model_requested": True,
+                "model_used": model_review["status"] == "completed",
+                "offline": model_review["status"] != "completed",
+                "network_calls": model_review["status"] == "completed",
+                "llm_used": model_review["status"] == "completed",
+                "model_provider": Config.BOSS_MODEL_PROVIDER,
+                "model_name": Config.BOSS_MODEL_NAME,
+            }
+        )
+        if model_review["status"] != "completed":
+            report["usage_metadata"]["model_note"] = model_review["message"]
+    else:
+        report["model_review"] = {
+            "status": "not_requested",
+            "message": "Model review was not requested; this result used the offline rules engine.",
+        }
+        report["usage_metadata"].update(
+            {
+                "model_requested": False,
+                "model_used": False,
+            }
+        )
+    return report
+
+
+def _bounded_text(value: Any, *, limit: int = 600) -> str:
+    if not isinstance(value, str):
+        return ""
+    return value.strip()[:limit]
+
+
+def _bounded_list(value: Any, *, limit: int = 6, item_limit: int = 500) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [text for item in value if (text := _bounded_text(item, limit=item_limit))][:limit]
+
+
+def _normalise_model_review(value: Any) -> dict[str, Any] | None:
+    if not isinstance(value, dict):
+        return None
+    impact = value.get("impact_direction")
+    if impact not in {"positive", "negative", "mixed", "neutral"}:
+        impact = "mixed"
+    risks: list[dict[str, str]] = []
+    for item in value.get("risk_points", []) if isinstance(value.get("risk_points"), list) else []:
+        if not isinstance(item, dict):
+            continue
+        risks.append(
+            {
+                "category": _bounded_text(item.get("category"), limit=100) or "other",
+                "severity": item.get("severity") if item.get("severity") in {"low", "medium", "high"} else "medium",
+                "evidence": _bounded_text(item.get("evidence"), limit=500),
+                "why_it_matters": _bounded_text(item.get("why_it_matters"), limit=600),
+            }
+        )
+        if len(risks) >= 6:
+            break
+    rewrites: list[dict[str, str]] = []
+    for item in value.get("rewrite_options", []) if isinstance(value.get("rewrite_options"), list) else []:
+        if not isinstance(item, dict):
+            continue
+        rewrites.append(
+            {
+                "label": _bounded_text(item.get("label"), limit=80) or "Suggested version",
+                "text": _bounded_text(item.get("text"), limit=1200),
+                "rationale": _bounded_text(item.get("rationale"), limit=400),
+            }
+        )
+        if len(rewrites) >= 3:
+            break
+    return {
+        "status": "completed",
+        "impact_direction": impact,
+        "assessment": _bounded_text(value.get("assessment"), limit=1200),
+        "confidence": value.get("confidence") if value.get("confidence") in {"low", "medium", "high"} else "medium",
+        "risk_points": risks,
+        "misunderstandings": _bounded_list(value.get("misunderstandings")),
+        "audience_differences": _bounded_list(value.get("audience_differences")),
+        "recommendations": _bounded_list(value.get("recommendations")),
+        "rewrite_options": rewrites,
+    }
+
+
+def _run_model_review(payload: Mapping[str, Any], baseline_report: Mapping[str, Any]) -> dict[str, Any]:
+    """Optionally add a model-backed review without changing the offline baseline."""
+
+    if (
+        Config.MIROIND_OFFLINE_ONLY
+        or not Config.BOSS_MODEL_ENABLED
+        or (Config.BOSS_MODEL_PROVIDER != "opencode" and not Config.BOSS_MODEL_API_KEY)
+    ):
+        return {
+            "status": "unavailable",
+            "message": "Model review is not configured; the deterministic review is shown instead.",
+        }
+
+    brand = payload["brand"]
+    asset = payload["asset"]
+    audience = payload["audience"]
+    prompt_context = {
+        "brand": brand,
+        "asset": asset,
+        "audience": audience,
+        "baseline_risk_categories": [item["category"] for item in baseline_report["risk_points"]],
+    }
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "You are the BOSS India-context message reviewer. Analyze one fictional or user-supplied "
+                "message for the stated audience context. Treat region, city tier, occupation, affordability, "
+                "platform context, and local expression as separate signals. Do not stereotype or claim to "
+                "represent India. Return JSON only with keys: impact_direction (positive|negative|mixed|neutral), "
+                "assessment, confidence (low|medium|high), risk_points (array of category, severity, evidence, "
+                "why_it_matters), misunderstandings (array), audience_differences (array), recommendations (array), "
+                "rewrite_options (array of label, text, rationale). Keep it specific, cautious, and under six risks."
+            ),
+        },
+        {
+            "role": "user",
+            "content": json.dumps(prompt_context, ensure_ascii=False),
+        },
+    ]
+    try:
+        if Config.BOSS_MODEL_PROVIDER == "opencode":
+            result = _normalise_model_review(_call_opencode(messages))
+        else:
+            client = LLMClient(
+                api_key=Config.BOSS_MODEL_API_KEY,
+                base_url=Config.BOSS_MODEL_BASE_URL,
+                model=Config.BOSS_MODEL_NAME,
+            )
+            result = _normalise_model_review(
+                client.chat_json(
+                    messages,
+                    temperature=0.2,
+                    max_tokens=Config.BOSS_MODEL_MAX_TOKENS,
+                    max_attempts=1,
+                )
+            )
+        if result is None:
+            raise ValueError("model returned an invalid review shape")
+        return result
+    except Exception as error:
+        logger.warning("BOSS model review unavailable: %s", type(error).__name__)
+        return {
+            "status": "unavailable",
+            "message": "Model review could not be completed; the deterministic review is shown instead.",
+        }
+
+
+def _call_opencode(messages: list[dict[str, str]]) -> dict[str, Any]:
+    """Call the project-local OpenCode CLI and extract its JSON text event."""
+
+    prompt = "\n\n".join(f"{item['role'].upper()}:\n{item['content']}" for item in messages)
+    project_root = Path(__file__).resolve().parents[3]
+    executable = shutil.which("opencode") or str(project_root / "node_modules/.bin/opencode")
+    if not Path(executable).exists():
+        raise RuntimeError("OpenCode CLI is not available in the project")
+    child_environment = os.environ.copy()
+    # The omnirush/OpenCode parent exports session markers. Remove them so a
+    # BOSS request starts an isolated model run instead of waiting on the
+    # parent agent's server/session.
+    for variable in ("OPENCODE", "OPENCODE_PID", "OPENCODE_SERVER"):
+        child_environment.pop(variable, None)
+    completed = subprocess.run(
+        [
+            executable,
+            "run",
+            "--standalone",
+            "--model",
+            Config.BOSS_MODEL_NAME,
+            "--format",
+            "json",
+            prompt,
+        ],
+        cwd=str(project_root),
+        env=child_environment,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=Config.BOSS_MODEL_TIMEOUT_SECONDS,
+        check=False,
+    )
+    if completed.returncode != 0:
+        raise RuntimeError("OpenCode model request failed")
+
+    text_parts: list[str] = []
+    for line in completed.stdout.splitlines():
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if event.get("type") == "text":
+            text = event.get("part", {}).get("text")
+            if isinstance(text, str):
+                text_parts.append(text)
+    response_text = "".join(text_parts).strip()
+    if not response_text:
+        raise ValueError("OpenCode returned no text")
+    response_text = re.sub(r"^```(?:json)?\s*", "", response_text, flags=re.IGNORECASE)
+    response_text = re.sub(r"\s*```$", "", response_text).strip()
+    parsed = json.loads(response_text)
+    if not isinstance(parsed, dict):
+        raise ValueError("OpenCode returned a non-object JSON value")
+    return parsed
 
 
 class MiroIndService:

@@ -8,11 +8,15 @@
     "setup:all": "npm run setup && npm run setup:backend",
     "dev": "concurrently --kill-others -n \"backend,frontend\" -c \"green,cyan\" \"npm run backend\" \"npm run frontend\"",
     "dev:miroind": "concurrently --kill-others -n \"backend,frontend\" -c \"green,cyan\" \"MIROIND_OFFLINE_ONLY=true npm run backend\" \"npm run frontend\"",
+    "dev:boss-model": "concurrently --kill-others -n \"backend,frontend\" -c \"green,cyan\" \"BOSS_MODEL_ENABLED=true MIROIND_OFFLINE_ONLY=false npm run backend\" \"npm run frontend\"",
+    "opencode": "opencode",
+    "opencode:models": "opencode models",
     "backend": "cd backend && uv run python run.py",
     "frontend": "cd frontend && npm run dev",
     "build": "cd frontend && npm run build"
   },
   "devDependencies": {
+    "@opencode/cli": "^2.0.32",
     "concurrently": "^9.2.4"
   },
   "engines": {

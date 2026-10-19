@@ -171,6 +171,32 @@ npm run dev:miroind
 
 Open **http://localhost:3000/miroind**. This mode starts the frontend and backend without LLM or Zep credentials. Runs are stored under `backend/uploads/miroind/runs/` and are ignored by git.
 
+### Optional model-backed BOSS reviews
+
+OpenCode is installed as a project-local CLI dependency. BOSS can use its
+configured model account for a second review view. It can also call an
+OpenAI-compatible endpoint directly when `BOSS_MODEL_PROVIDER=direct`.
+
+```sh
+npm run opencode:models
+```
+
+To enable model-backed reviews with the configured provider:
+
+```sh
+export BOSS_MODEL_ENABLED=true
+export BOSS_MODEL_PROVIDER=opencode
+export BOSS_MODEL_NAME=omnirush/gpt-6-astra
+npm run dev:boss-model
+```
+
+The offline mode remains the default and never makes model calls. Do not commit
+provider keys. Check the available OpenCode models with `npm run
+opencode:models`. For a direct DeepSeek-compatible endpoint, use
+`BOSS_MODEL_PROVIDER=direct`, `BOSS_MODEL_API_KEY`,
+`BOSS_MODEL_BASE_URL=https://api.deepseek.com/v1`, and
+`BOSS_MODEL_NAME=deepseek-chat`.
+
 For the original graph/simulation workflow, configure valid credentials in `.env` and use:
 
 ```sh
