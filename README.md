@@ -8,7 +8,7 @@ Hindi-first experiences. Regional perspectives. Local-first memory. Built with I
 
 [Vision](#why-miroind) · [Use cases](#what-could-you-explore) · [Roadmap](#roadmap) · [Contribute](#contribute)
 
-> **Status: planning / documentation-only.** This repository currently contains the project vision and roadmap. The simulation engine, integrations, UI, and demos described below are proposed—not implemented. There is no runnable application yet.
+> **Status: upstream foundation imported; India-specific adaptations planned.** This repository includes the MiroFish Vue frontend, Flask backend, simulation engine, and tests. The Hindi-first experience, Indian persona packs, additional platform simulations, and local graph memory described below are roadmap items—not implemented yet. The current engine requires an LLM provider and Zep Cloud credentials.
 
 ---
 
@@ -100,7 +100,8 @@ Using a hosted model sends submitted prompts and context to that provider and ma
 
 ### Phase 1 — Establish the foundation
 
-- [ ] Evaluate the MiroFish architecture and upstream license before reusing code.
+- [x] Import the MiroFish foundation with its AGPL-3.0 license and upstream attribution.
+- [ ] Evaluate the architecture for India-specific adaptations.
 - [ ] Document the implementation stack and a minimal runnable simulation.
 - [ ] Add Hindi and English prompts and report templates.
 - [ ] Create 8–10 editable Indian synthetic persona templates.
@@ -140,14 +141,42 @@ MiroInd is intended for research, learning, and testing hypotheses—not manufac
 
 ## Getting started
 
-There is nothing to install or run yet. For now:
+### Prerequisites
 
-1. Read the roadmap and pick a narrowly scoped contribution.
-2. Open an issue describing the problem, intended users, and a testable outcome.
-3. For language or persona work, include the assumptions and a review approach.
-4. For engine work, propose a minimal experiment before adding infrastructure.
+- **Node.js 20.19+ or 22.12+** for the imported Vite 7 frontend.
+- **Python 3.11 or 3.12** (Python 3.13 is not supported by the backend).
+- **uv** for Python dependency management.
+- An **OpenAI-compatible LLM endpoint** and a **Zep Cloud API key** for full simulations.
 
-Setup instructions will be added when a working prototype is available. **No API keys are needed to read or contribute to this planning repository.** Never commit secrets or personal datasets.
+### Install
+
+From the repository root:
+
+```sh
+npm ci
+npm --prefix frontend ci
+uv sync --project backend --python 3.12
+cp .env.example .env
+```
+
+Edit the local `.env` file to configure `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL_NAME`, and `ZEP_API_KEY`. Never commit secrets or personal datasets. The example configuration retains upstream provider defaults; select your provider explicitly. Hosted models and Zep may incur costs and receive submitted scenario data.
+
+### Run locally
+
+```sh
+npm run dev
+```
+
+This starts the backend and frontend together. Use the frontend URL printed by Vite; the backend defaults to port **5001**. Full simulation functionality requires valid credentials. The imported application still uses upstream branding, prompts, and Twitter/X + Reddit simulation behavior.
+
+### Validate
+
+```sh
+npm run build
+uv run --project backend python -m pytest backend/tests tests
+```
+
+See [the original MiroFish README](./README.upstream.md) for upstream usage and Docker instructions. Its deployment links and container images refer to the upstream project, not an India-adapted release.
 
 ## Contribute
 
@@ -166,9 +195,11 @@ Please open an issue before starting substantial implementation so the scope and
 
 ## Inspiration and licensing
 
-MiroInd is inspired by the MiroFish multi-agent simulation concept. This repository currently contains an independent project proposal, not a working MiroFish fork, and does not claim affiliation with or endorsement by its maintainers.
+MiroInd is based on [MiroFish by 666ghj and its contributors](https://github.com/666ghj/MiroFish). The source was imported from upstream `main` at commit [`7657031ac01184afe2cb220f5ee3545573b5e843`](https://github.com/666ghj/MiroFish/commit/7657031ac01184afe2cb220f5ee3545573b5e843). The original documentation is preserved in [README.upstream.md](./README.upstream.md) and [README-ZH.md](./README-ZH.md). MiroInd does not claim affiliation with or endorsement by the upstream maintainers.
 
-**Licensing is not finalized.** The intent is an open-source implementation, but this repository does not yet grant an open-source license. A license must be selected and added before code is distributed as open source; any upstream reuse must preserve applicable license terms and attribution.
+The imported code is licensed under the **GNU Affero General Public License v3.0**; see [LICENSE](./LICENSE). Preserve upstream copyright, attribution, and license notices. Distribution and network deployment of modified versions must comply with the AGPL, including applicable corresponding-source requirements.
+
+The import retains the upstream application unchanged; this README documents the MiroInd direction and local setup. The Git remote `origin` points to MiroInd, while `upstream` points to MiroFish for future reference. Source history remains available through the upstream remote; the files were imported as a snapshot, not a merge of Git histories.
 
 ---
 
