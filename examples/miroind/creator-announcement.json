@@ -1,0 +1,30 @@
+{
+  "brand": {
+    "name": "Asha Verma",
+    "positioning": "A creator who shares practical home-business lessons",
+    "tone": "honest and useful",
+    "audience_relationship": "a peer learning alongside the audience",
+    "red_lines": ["no false promises", "no undisclosed sponsorships"],
+    "preferred_vocabulary": ["honest", "practical", "together"]
+  },
+  "asset": {
+    "type": "text",
+    "title": "A new series for small business builders",
+    "content": "I am starting a practical series on finding customers and managing time. I will share what worked, what did not, and the questions I am still testing.",
+    "language": "en"
+  },
+  "audience": {
+    "region": "Uttar Pradesh",
+    "language": "Hindi",
+    "age_band": "20-39",
+    "occupation": "creator or early-stage entrepreneur",
+    "city_tier": "mixed",
+    "income_band": "varied"
+  },
+  "config": {
+    "report_language": "en",
+    "interaction_format": "short_post",
+    "persona_count": 6,
+    "budget": 20
+  }
+}

@@ -8,10 +8,13 @@ from dotenv import load_dotenv
 project_root_env = os.path.join(os.path.dirname(__file__), '../../.env')
 
 if os.path.exists(project_root_env):
-    load_dotenv(project_root_env, override=True)
+    # Keep explicit process environment values authoritative. This lets
+    # `npm run dev:miroind` enable offline mode even when a developer has a
+    # `.env` file copied from the hosted-provider example.
+    load_dotenv(project_root_env, override=False)
 else:
     # 如果根目录没有 .env，尝试加载环境变量（用于生产环境）
-    load_dotenv(override=True)
+    load_dotenv(override=False)
 
 
 class Config:
@@ -31,6 +34,11 @@ class Config:
     
     # Zep配置
     ZEP_API_KEY = os.environ.get('ZEP_API_KEY')
+
+    # The MiroInd MVP can run without hosted provider credentials. Set this
+    # explicitly for local/offline development; upstream graph simulations
+    # still require both provider keys.
+    MIROIND_OFFLINE_ONLY = os.environ.get('MIROIND_OFFLINE_ONLY', 'false').lower() == 'true'
     
     # 文件上传配置
     MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB
@@ -70,10 +78,11 @@ class Config:
     def validate(cls) -> list[str]:
         """验证必要配置"""
         errors: list[str] = []
-        if not cls.LLM_API_KEY:
-            errors.append("LLM_API_KEY 未配置")
-        if not cls.ZEP_API_KEY:
-            errors.append("ZEP_API_KEY 未配置")
+        if not cls.MIROIND_OFFLINE_ONLY:
+            if not cls.LLM_API_KEY:
+                errors.append("LLM_API_KEY 未配置")
+            if not cls.ZEP_API_KEY:
+                errors.append("ZEP_API_KEY 未配置")
         if os.environ.get("ZEP_API_URL"):
             errors.append("ZEP_API_URL 不受支持；MiroFish 仅连接 Zep Cloud")
         if cls.DEBUG:

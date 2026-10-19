@@ -32,6 +32,9 @@ def main():
             print(f"  - {err}")
         print("\n请检查 .env 文件中的配置")
         sys.exit(1)
+
+    if Config.MIROIND_OFFLINE_ONLY:
+        print("MIROIND_OFFLINE_ONLY=true: starting the credential-free MiroInd workflow")
     
     # 创建应用
     app = create_app()
@@ -47,4 +50,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

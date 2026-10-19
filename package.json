@@ -7,6 +7,7 @@
     "setup:backend": "cd backend && uv sync",
     "setup:all": "npm run setup && npm run setup:backend",
     "dev": "concurrently --kill-others -n \"backend,frontend\" -c \"green,cyan\" \"npm run backend\" \"npm run frontend\"",
+    "dev:miroind": "concurrently --kill-others -n \"backend,frontend\" -c \"green,cyan\" \"MIROIND_OFFLINE_ONLY=true npm run backend\" \"npm run frontend\"",
     "backend": "cd backend && uv run python run.py",
     "frontend": "cd frontend && npm run dev",
     "build": "cd frontend && npm run build"
@@ -15,7 +16,7 @@
     "concurrently": "^9.2.4"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.19.0"
   },
   "license": "AGPL-3.0"
 }

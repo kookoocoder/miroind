@@ -1,0 +1,30 @@
+{
+  "brand": {
+    "name": "Saanjh Learn",
+    "positioning": "A practical learning app for people building new skills",
+    "tone": "warm and encouraging",
+    "audience_relationship": "a patient learning companion",
+    "red_lines": ["no confusing fees", "no exaggerated outcomes"],
+    "preferred_vocabulary": ["simple", "learn", "step by step"]
+  },
+  "asset": {
+    "type": "text",
+    "title": "Learn in the language that feels natural",
+    "content": "Start simple lessons in Hindi today and take one useful step at your own pace.",
+    "language": "en"
+  },
+  "audience": {
+    "region": "Madhya Pradesh",
+    "language": "Hindi",
+    "age_band": "25-44",
+    "occupation": "first-time digital learner",
+    "city_tier": "tier_2",
+    "income_band": "middle"
+  },
+  "config": {
+    "report_language": "en",
+    "interaction_format": "short_post",
+    "persona_count": 6,
+    "budget": 20
+  }
+}

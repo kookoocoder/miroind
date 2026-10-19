@@ -1,0 +1,30 @@
+{
+  "brand": {
+    "name": "Nayi Disha Wallet",
+    "positioning": "A simple digital payment tool for everyday business",
+    "tone": "direct and transparent",
+    "audience_relationship": "a dependable business helper",
+    "red_lines": ["no hidden fees", "no pressure tactics"],
+    "preferred_vocabulary": ["clear", "transparent", "help"]
+  },
+  "asset": {
+    "type": "text",
+    "title": "Limited-time zero-fee offer",
+    "content": "Hurry! Pay ₹999 today to unlock our best plan. Zero risk, guaranteed instant savings.",
+    "language": "en"
+  },
+  "audience": {
+    "region": "Rajasthan",
+    "language": "Hindi",
+    "age_band": "30-50",
+    "occupation": "small shop owner",
+    "city_tier": "tier_2",
+    "income_band": "lower-middle"
+  },
+  "config": {
+    "report_language": "hi",
+    "interaction_format": "short_post",
+    "persona_count": 8,
+    "budget": 25
+  }
+}

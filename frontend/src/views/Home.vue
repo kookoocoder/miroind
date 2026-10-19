@@ -4,6 +4,7 @@
     <nav class="navbar">
       <div class="nav-brand">MIROFISH</div>
       <div class="nav-links">
+        <router-link to="/miroind" class="miroind-link">Try MiroInd MVP ↗</router-link>
         <LanguageSwitcher />
         <a href="https://github.com/666ghj/MiroFish" target="_blank" class="github-link">
           {{ $t('nav.visitGithub') }} <span class="arrow">↗</span>
@@ -358,6 +359,18 @@ const startSimulation = () => {
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+.miroind-link {
+  color: #f4ad84;
+  text-decoration: none;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.miroind-link:hover {
+  color: var(--white);
 }
 
 .github-link {

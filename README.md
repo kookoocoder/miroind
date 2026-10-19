@@ -8,7 +8,7 @@ Hindi-first experiences. Regional perspectives. Local-first memory. Built with I
 
 [Vision](#why-miroind) · [Use cases](#what-could-you-explore) · [Roadmap](#roadmap) · [Contribute](#contribute)
 
-> **Status: upstream foundation imported; India-specific adaptations planned.** This repository includes the MiroFish Vue frontend, Flask backend, simulation engine, and tests. The Hindi-first experience, Indian persona packs, additional platform simulations, and local graph memory described below are roadmap items—not implemented yet. The current engine requires an LLM provider and Zep Cloud credentials.
+> **Status: MiroInd MVP slice available.** This repository includes the upstream MiroFish Vue frontend, Flask backend, simulation engine, and a credential-free MiroInd text stress-test workflow. The MVP accepts a brand profile, text asset, and Indian audience lens at `/miroind`, then returns a deterministic structured report. The upstream graph/simulation workflow still requires an LLM provider and Zep Cloud credentials.
 
 ---
 
@@ -101,13 +101,13 @@ Using a hosted model sends submitted prompts and context to that provider and ma
 ### Phase 1 — Establish the foundation
 
 - [x] Import the MiroFish foundation with its AGPL-3.0 license and upstream attribution.
-- [ ] Evaluate the architecture for India-specific adaptations.
-- [ ] Document the implementation stack and a minimal runnable simulation.
-- [ ] Add Hindi and English prompts and report templates.
-- [ ] Create 8–10 editable Indian synthetic persona templates.
-- [ ] Prototype Instagram-style, WhatsApp-style, and X-style interactions.
+- [x] Evaluate the architecture for India-specific adaptations.
+- [x] Document the implementation stack and a minimal runnable simulation.
+- [x] Add Hindi and English deterministic report templates.
+- [x] Create 8–10 editable Indian synthetic research-lens templates.
+- [x] Prototype a short-form post/discussion interaction format.
 - [ ] Select and implement a local graph-memory backend.
-- [ ] Add 3–4 documented Indian demo scenarios.
+- [x] Add 3 documented fictional Indian demo scenarios.
 
 ### Phase 2 — Build India-specific depth
 
@@ -121,10 +121,10 @@ Using a hosted model sends submitted prompts and context to that provider and ma
 ### Phase 3 — Make it easy to run and inspect
 
 - [ ] Provide Docker-based setup with a local-model option.
-- [ ] Add a smaller, budget-friendly quick-simulation mode.
+- [x] Add a smaller, budget-friendly deterministic quick-simulation mode.
 - [ ] Export Hindi and English reports, including PDF.
 - [ ] Add configuration capture and experiment comparisons.
-- [ ] Publish contributor documentation and reproducible examples.
+- [x] Publish contributor documentation and reproducible examples.
 
 Milestones are directional; no release dates or performance claims are promised yet.
 
@@ -163,18 +163,45 @@ Edit the local `.env` file to configure `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODE
 
 ### Run locally
 
+For the credential-free MiroInd MVP:
+
+```sh
+npm run dev:miroind
+```
+
+Open **http://localhost:3000/miroind**. This mode starts the frontend and backend without LLM or Zep credentials. Runs are stored under `backend/uploads/miroind/runs/` and are ignored by git.
+
+For the original graph/simulation workflow, configure valid credentials in `.env` and use:
+
 ```sh
 npm run dev
 ```
 
-This starts the backend and frontend together. Use the frontend URL printed by Vite; the backend defaults to port **5001**. Full simulation functionality requires valid credentials. The imported application still uses upstream branding, prompts, and Twitter/X + Reddit simulation behavior.
+This starts the backend and frontend together. Use the frontend URL printed by Vite; the backend defaults to port **5001**. The imported application uses upstream graph, prompts, and Twitter/X + Reddit simulation behavior.
+
+The equivalent Make target is:
+
+```sh
+make run-miroind
+```
+
+### Docker
+
+Build and run the local MiroInd image without provider credentials:
+
+```sh
+docker compose up --build
+```
+
+Open **http://localhost:3000/miroind**. Set `MIROIND_OFFLINE_ONLY=false` and provide provider credentials when running the upstream graph/simulation workflow.
 
 ### Validate
 
 ```sh
-npm run build
-uv run --project backend python -m pytest backend/tests tests
+make test
 ```
+
+This runs the production frontend build and the offline-capable backend test suite. The individual commands are `npm run build` and `uv run --project backend python -m pytest backend/tests tests`.
 
 See [the original MiroFish README](./README.upstream.md) for upstream usage and Docker instructions. Its deployment links and container images refer to the upstream project, not an India-adapted release.
 

@@ -1,6 +1,6 @@
 # MiroInd Implementation Plan
 
-**Status:** Draft — approval requested  
+**Status:** MVP slice implemented and verified
 **Source:** `MiroInd_Project_Alignment_Document.docx` v0.1 and the repository roadmap in `README.md`  
 **Current repository state:** Upstream MiroFish frontend, Flask backend, simulation engine, and tests are present. India-specific personas, Hindi-first flows, local graph memory, and brand/image reporting are not yet implemented.
 
@@ -234,6 +234,9 @@ Please approve or change these recommendations:
 6. **Safety boundary:** No real social-platform posting, private-message ingestion, political influence tooling, or sensitive-attribute inference.
 7. **Quality gate:** Do not expand scope until fictional scenarios pass the report-quality, transparency, and offline-test checks above.
 
-## 8. Approval checkpoint
+## 8. Implementation outcome
 
-Implementation should begin only after the MVP scope and the seven decisions above are approved. Once approved, the next concrete step is **Work package 0: Reproducible project baseline**, followed by the domain schemas and API contract.
+The approved MVP scope is implemented as a credential-free, deterministic text
+stress-test workflow. The next expansion should remain behind the quality gate:
+evaluate the report with native-language reviewers before adding more platform
+formats, video support, or regional-language breadth.

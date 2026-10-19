@@ -1,8 +1,10 @@
-FROM python:3.11
+FROM node:22.21.1-bookworm-slim
 
-# 安装 Node.js （满足 >=18）及必要工具
+# The backend supports Python 3.11/3.12. Debian Bookworm supplies Python 3.11,
+# which keeps the image small while the repository pins local development to
+# Python 3.12 through .python-version.
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends nodejs npm \
+  && apt-get install -y --no-install-recommends python3 python3-venv \
   && rm -rf /var/lib/apt/lists/*
 
 # 从 uv 官方镜像复制 uv
@@ -18,12 +20,15 @@ COPY backend/pyproject.toml backend/uv.lock ./backend/
 # 安装依赖（Node + Python）
 RUN npm ci \
   && npm ci --prefix frontend \
-  && cd backend && uv sync --frozen
+  && uv sync --frozen --project backend --python 3.11
 
 # 复制项目源码
 COPY . .
 
 EXPOSE 3000 5001
 
-# 同时启动前后端（开发模式）
-CMD ["npm", "run", "dev"]
+# Start the credential-free MiroInd workflow by default. Override
+# MIROIND_OFFLINE_ONLY=false and provide provider credentials for upstream
+# graph/simulation features.
+ENV MIROIND_OFFLINE_ONLY=true
+CMD ["npm", "run", "dev:miroind"]
